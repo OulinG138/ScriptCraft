@@ -1,0 +1,1293 @@
+{
+	"info": {
+		"_postman_id": "deb8d137-e6db-4977-a515-528070d0e97d",
+		"name": "CSC309 Part 1",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "38544170"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Sign up",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"johndoe@example.com\",\n  \"password\": \"StrongPassword123\",\n  \"phoneNumber\": \"+15551234567\",\n  \"avatarId\": 1,\n  \"isAdmin\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/auth/signup"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse the JSON response body",
+									"const response = pm.response.json();",
+									"",
+									"// Check if accessToken exists in the response",
+									"if (response.accessToken) {",
+									"  // Set the accessToken as a collection variable",
+									"  pm.collectionVariables.set(\"accessToken\", response.accessToken);",
+									"  console.log(\"Access token set as collection variable\");",
+									"} else {",
+									"  console.log(\"accessToken not found in response\");",
+									"}",
+									"",
+									"if (response.refreshToken) {",
+									"  // Set the accessToken as a collection variable",
+									"  pm.collectionVariables.set(\"refreshToken\", response.refreshToken);",
+									"  console.log(\"Refresh token set as collection variable\");",
+									"} else {",
+									"  console.log(\"refreshToken not found in response\");",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"johndoe@example.com\",\n  \"password\": \"StrongPassword123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/auth/login"
+					},
+					"response": []
+				},
+				{
+					"name": "Get new access token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/auth/refresh"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get avatars",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/user/avatars"
+					},
+					"response": []
+				},
+				{
+					"name": "Get authenticated user profile",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/user/profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Update authenticated user profile",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"johndoe@example.com\",\n  \"phoneNumber\": \"+15551234567\",\n  \"avatarId\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/user/profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Get paginated blog posts for a user",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/user/posts?page=1&limit=10",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"user",
+								"posts"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Ratings",
+			"item": [
+				{
+					"name": "Get paginated comment ratings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/comments/:commentId/ratings?page=1&limit=10",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"comments",
+								":commentId",
+								"ratings"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							],
+							"variable": [
+								{
+									"key": "commentId",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get paginated post ratings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/posts/:postId/ratings?page=1&limit=10",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":postId",
+								"ratings"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a rating",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/ratings/:ratingId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"ratings",
+								":ratingId"
+							],
+							"variable": [
+								{
+									"key": "ratingId",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a rating",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"targetType\": \"post\",\n  \"targetId\": 1,\n  \"value\": 0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/ratings"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Blog Posts",
+			"item": [
+				{
+					"name": "Get a specific post",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/posts/:postId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":postId"
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a specific post",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"My First Post\",\n  \"description\": \"A short description of my first post.\",\n  \"content\": \"This is my content.\",\n  \"tags\": [\n    \"introduction\"\n  ],\n  \"codeTemplateIds\": [\n    1\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/posts/:postId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":postId"
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a specific post",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/posts/:postId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":postId"
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "3"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a post",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"My first blog post\",\n  \"description\": \"A description\",\n  \"content\": \"A short content\",\n  \"tags\": [\n    \"introduction\"\n  ],\n  \"codeTemplateIds\": [\n    1\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/posts"
+					},
+					"response": []
+				},
+				{
+					"name": "Search and Sort",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"string\",\n  \"description\": \"string\",\n  \"content\": \"string\",\n  \"tags\": [\n    \"string\"\n  ],\n  \"codeTemplateIds\": [\n    1\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/posts?search=first&searchTags=basic,introduction&sortBy=ratings&codeTemplateId=1&page=1&limit=10",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"posts"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "first"
+								},
+								{
+									"key": "searchTags",
+									"value": "basic,introduction"
+								},
+								{
+									"key": "sortBy",
+									"value": "ratings"
+								},
+								{
+									"key": "codeTemplateId",
+									"value": "1"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Comments",
+			"item": [
+				{
+					"name": "Add a coment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"This is a great post!\",\n  \"parentCommentId\": 0\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/posts/:postId/comments",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":postId",
+								"comments"
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get paginated comments for a post",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/posts/:postId/comments?page=1&limit=10&sortBy=ratings",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								":postId",
+								"comments"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "sortBy",
+									"value": "ratings"
+								}
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reports",
+			"item": [
+				{
+					"name": "Create a report",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"targetType\": \"post\",\n  \"targetId\": 1,\n  \"explanation\": \"This post contains inappropriate content.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/reports"
+					},
+					"response": []
+				},
+				{
+					"name": "Get paginated reports for comments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/api/admin/reports/comments"
+					},
+					"response": []
+				},
+				{
+					"name": "Get paginated reports for blog posts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/admin/reports/posts?sort=desc&page=1&limit=5",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"reports",
+								"posts"
+							],
+							"query": [
+								{
+									"key": "sort",
+									"value": "desc"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Hide a post/comment",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"targetType\": \"post\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/api/admin/reports/:reportId/hide",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"reports",
+								":reportId",
+								"hide"
+							],
+							"variable": [
+								{
+									"key": "reportId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific report",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/admin/reports/:postId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"reports",
+								":postId"
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Resolve a report",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/api/admin/reports/:postId/resolve",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"reports",
+								":postId",
+								"resolve"
+							],
+							"variable": [
+								{
+									"key": "postId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Code Templates",
+			"item": [
+				{
+					"name": "Create Dummy user 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"firstName\": \"John\",\r\n  \"lastName\": \"Doe\",\r\n  \"email\": \"email\",\r\n  \"password\": \"password\",\r\n  \"phoneNumber\": \"+15551234567\",\r\n  \"avatarId\": 1,\r\n  \"isAdmin\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/auth/signup"
+					},
+					"response": []
+				},
+				{
+					"name": "login (user 2)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);\r",
+									"pm.environment.set(\"altAuthToken\", jsonData[\"accessToken\"]);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"email\",\r\n    \"password\": \"password\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/auth/login"
+					},
+					"response": []
+				},
+				{
+					"name": "Get valid template",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/api/code/template/3"
+					},
+					"response": []
+				},
+				{
+					"name": "Get invalid template",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseURL}}/api/code/template/1"
+					},
+					"response": []
+				},
+				{
+					"name": "Make template (logged in)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = JSON.parse(responseBody);\r",
+									"pm.environment.set(\"newTemplate\", jsonData[\"template\"].id);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"Hello World\",\r\n    \"explanation\": \"Prints Hello World\",\r\n    \"codeContent\": \"print(\\\"Hello World\\\")\",\r\n    \"language\": \"python\",\r\n    \"tags\": [\"example tag\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/template/"
+					},
+					"response": []
+				},
+				{
+					"name": "Make template (not logged in)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"Hello World\",\r\n    \"explanation\": \"Prints Hello World\",\r\n    \"codeContent\": \"print(\\\"Hello World\\\")\",\r\n    \"language\": \"python\",\r\n    \"tags\": [\"example tag\"]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/template/"
+					},
+					"response": []
+				},
+				{
+					"name": "Search code templates",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"new title\",\r\n    \"explanation\": \"Prints Hello World\",\r\n    \"language\": \"python\",\r\n    \"pageSize\": 20,\r\n    \"pageNumber\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/search"
+					},
+					"response": []
+				},
+				{
+					"name": "Search author code templates",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"authorID\": 1,\r\n    \"pageSize\": 20,\r\n    \"pageNumber\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "http://localhost:3000/api/code/search"
+					},
+					"response": []
+				},
+				{
+					"name": "Previous search but strict pagination",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"new title\",\r\n    \"explanation\": \"Prints Hello World\",\r\n    \"language\": \"python\",\r\n    \"pageSize\": 1,\r\n    \"pageNumber\": 2\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/search"
+					},
+					"response": []
+				},
+				{
+					"name": "Edit template (logged in)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"new title\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/template/{{newTemplate}}"
+					},
+					"response": []
+				},
+				{
+					"name": "Edit template (not logged in)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"new title\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/template/{{newTemplate}}"
+					},
+					"response": []
+				},
+				{
+					"name": "Edit template (incorrect account)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": {}
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"new title\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/template/{{newTemplate}}"
+					},
+					"response": []
+				},
+				{
+					"name": "Fork template (not logged in)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/template/{{newTemplate}}"
+					},
+					"response": []
+				},
+				{
+					"name": "Fork template (logged in)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/template/{{newTemplate}}"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Template (not logged in)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseURL}}/api/code/template/{{newTemplate}}"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Template (Incorrect account)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": {}
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseURL}}/api/code/template/{{newTemplate}}"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Template (logged in) Copy",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{baseURL}}/api/code/template/{{newTemplate}}"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Code Execution",
+			"item": [
+				{
+					"name": "Basic execution (python)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"print(\\\"Hello World\\\")\",\r\n    \"language\": \"python\",\r\n    \"input\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				},
+				{
+					"name": "Input execution (python)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"for i in range(3):\\r\\n\\tx = input()\\r\\n\\tprint(x)\",\r\n    \"language\": \"python\",\r\n    \"input\": \"1\\n2\\n3\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				},
+				{
+					"name": "Basic execution (java)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"class HelloWorld {\\r\\n\\tpublic static void main(String[] args) {\\r\\n\\t\\tSystem.out.println(\\\"Hello World\\\");}}\",\r\n    \"language\": \"java\",\r\n    \"input\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				},
+				{
+					"name": "Input execution (java)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"import java.util.Scanner;\\r\\nclass HelloWorld {\\r\\n\\tpublic static void main(String[] args) {\\r\\n\\t\\tScanner myObj = new Scanner(System.in);\\r\\n\\t\\tString input = myObj.nextLine();\\r\\n\\t\\tSystem.out.println(input);}}\",\r\n    \"language\": \"java\",\r\n    \"input\": \"1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				},
+				{
+					"name": "Basic execution (js)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"console.log(\\\"Hello World\\\")\",\r\n    \"language\": \"javascript\",\r\n    \"input\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				},
+				{
+					"name": "Basic execution (c)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"#include <stdio.h>\\r\\nint main() {\\r\\n\\tprintf(\\\"Hello World\\\");\\r\\n\\treturn 0;}\",\r\n    \"language\": \"c\",\r\n    \"input\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				},
+				{
+					"name": "Input execution (c)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"#include <stdio.h>\\r\\nint main() {\\r\\n\\tint num;\\r\\n\\tscanf(\\\"%d\\\", &num);\\r\\n\\tprintf(\\\"%d\\\", num);}\",\r\n    \"language\": \"c\",\r\n    \"input\": \"1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				},
+				{
+					"name": "Basic execution (c++)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"#include <iostream>\\r\\nint main() {\\r\\n\\tstd::cout << \\\"Hello World!\\\";\\r\\n\\treturn 0;}\",\r\n    \"language\": \"c++\",\r\n    \"input\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				},
+				{
+					"name": "Input execution (c++)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"#include <iostream>\\r\\nint main() {\\r\\n\\tint x;\\r\\n\\tstd::cin >> x;\\r\\n\\tstd::cout << x;}\",\r\n    \"language\": \"c++\",\r\n    \"input\": \"1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				},
+				{
+					"name": "Failed execution",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"content\": \"print(a)\",\r\n    \"language\": \"python\",\r\n    \"input\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{baseURL}}/api/code/execute"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": {
+			"token": "{{accessToken}}"
+		}
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					"pm.environment.set(\"baseURL\", pm.environment.get(\"baseURL\") || \"http://localhost:3000\");",
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "baseURL",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
