@@ -4,7 +4,7 @@ import { createContext, useState, ReactNode, useEffect } from "react";
 type User = {
   firstName: string;
   lastName: string;
-  email?: string;
+  avatarId: number;
 };
 
 type Auth = {

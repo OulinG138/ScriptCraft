@@ -22,18 +22,6 @@ const authAxiosInstance = axios.create({
   withCredentials: true,
 });
 
-authAxiosInstance.interceptors.request.use(
-  (config) => {
-    const accessToken = localStorage.getItem("accessToken");
-    console.log("request interceptor");
-    if (!config.headers["Authorization"]) {
-      config.headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
 authAxiosInstance.interceptors.response.use(
   (response) => {
     return response;
