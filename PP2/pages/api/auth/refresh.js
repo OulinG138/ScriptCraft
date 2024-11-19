@@ -1,29 +1,29 @@
 import { verifyRefreshToken, generateAccessToken } from "@/utils/auth";
+import { getRefreshTokenCookie } from "@/utils/auth";
 
 /**
  * @swagger
  * /api/auth/refresh:
  *   post:
  *     summary: Refresh access token
- *     description: Generates a new access token using a valid refresh token.
+ *     description: Generates a new access token using a valid refresh token stored in cookies. A new refresh token cookie is also set.
  *     tags:
  *       - Auth
  *     requestBody:
- *       required: true
+ *       required: false
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - refreshToken
- *             properties:
- *               refreshToken:
- *                 type: string
- *                 description: The refresh token provided during login.
- *                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
  *     responses:
  *       200:
  *         description: Access token refreshed successfully.
+ *         headers:
+ *           Set-Cookie:
+ *             description: A new refresh token cookie is set.
+ *             schema:
+ *               type: string
+ *               example: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=86400
  *         content:
  *           application/json:
  *             schema:
@@ -55,6 +55,12 @@ import { verifyRefreshToken, generateAccessToken } from "@/utils/auth";
  *                   example: Invalid or expired refresh token
  *       405:
  *         description: Method not allowed.
+ *         headers:
+ *           Allow:
+ *             description: Allowed HTTP methods.
+ *             schema:
+ *               type: string
+ *               example: POST
  *         content:
  *           application/json:
  *             schema:
@@ -66,7 +72,7 @@ import { verifyRefreshToken, generateAccessToken } from "@/utils/auth";
  */
 export default async function handler(req, res) {
   if (req.method === "POST") {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.token;
 
     if (!refreshToken) {
       return res.status(400).json({ error: "No refresh token provided" });
