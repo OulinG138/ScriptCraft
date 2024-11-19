@@ -6,20 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "prepare": "husky install"
+    "lint": "next lint"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@fontsource/roboto": "^5.1.0",
+    "@monaco-editor/react": "^4.6.0",
     "@mui/icons-material": "^6.1.7",
     "@mui/material": "^6.1.7",
     "@mui/styled-engine-sc": "^6.1.7",
-=======
-    "@monaco-editor/react": "^4.6.0",
->>>>>>> refs/remotes/origin/master
     "@prisma/client": "^5.21.1",
     "@prisma/studio": "^0.503.0",
     "autoprefixer": "^10.4.20",
@@ -35,12 +31,9 @@
     "next": "14.2.15",
     "react": "^18",
     "react-dom": "^18",
-<<<<<<< HEAD
     "react-hot-toast": "^2.4.1",
-    "styled-components": "^6.1.13",
-=======
     "react-tabs": "^6.0.2",
->>>>>>> refs/remotes/origin/master
+    "styled-components": "^6.1.13",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui": "^5.17.14",
     "swagger-ui-react": "^5.17.14",
@@ -52,7 +45,6 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/react-toastify": "^4.0.2",
-    "husky": "^8.0.0",
     "lint-staged": "^15.2.10",
     "postcss": "^8.4.49",
     "prettier": "^3.3.3",
