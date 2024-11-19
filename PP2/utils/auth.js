@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { serialize } from "cookie";
 
 const BCRYPT_SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS);
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
@@ -51,6 +52,17 @@ export const verifyAccessToken = (token) => {
 
 export const verifyRefreshToken = (token) => {
   return jwt.verify(token, REFRESH_TOKEN_SECRET);
+};
+
+export const getRefreshTokenCookie = (refreshToken, age) => {
+  const serialized = serialize("token", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: age,
+    path: "/",
+  });
+  return serialized;
 };
 
 export const verifyLoggedIn = (req) => {
