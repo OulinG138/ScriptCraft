@@ -170,8 +170,8 @@ export default async function handler(req, res) {
               tags && tags.length > 0
                 ? {
                     connectOrCreate: tags.map((tagName) => ({
-                      where: { name: tagName },
-                      create: { name: tagName },
+                      where: { name: tagName.toLowerCase() },
+                      create: { name: tagName.toLowerCase() },
                     })),
                   }
                 : undefined,
@@ -248,12 +248,15 @@ export default async function handler(req, res) {
           .split(",")
           .map((tag) => tag.trim())
           .filter((tag) => tag);
+      
         if (!where.AND) where.AND = [];
         where.AND.push({
           AND: tags.map((tag) => ({
             tags: {
               some: {
-                name: tag,
+                name: {
+                  equals: tag.toLowerCase(),
+                },
               },
             },
           })),

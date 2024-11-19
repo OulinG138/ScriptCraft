@@ -119,8 +119,12 @@ export default async function handler(req, res) {
     try {
       const post = await prisma.BlogPost.findUnique({
         where: { id: Number(postId) },
+        include: {
+          tags: true,            // Include all associated tags
+          codeTemplates: true,   // Include all associated code templates
+        },
       });
-
+      
       if (!post) {
         return res.status(404).json({ error: "Post not found" });
       }

@@ -176,7 +176,7 @@ export default async function handler(req, res) {
       verifyLoggedIn(req, res);
       let where;
       if (!req.user) {
-        where = { postId, isHidden: false };
+        where = { postId: Number(postId), isHidden: false };
       } else {
         where = {
           postId: Number(postId),
