@@ -10,6 +10,7 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.6.0",
     "@prisma/client": "^5.21.1",
     "@prisma/studio": "^0.503.0",
     "aws-sdk": "^2.1691.0",
@@ -21,6 +22,7 @@
     "next": "14.2.15",
     "react": "^18",
     "react-dom": "^18",
+    "react-tabs": "^6.0.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui": "^5.17.14",
     "swagger-ui-react": "^5.17.14"
