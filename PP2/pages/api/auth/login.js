@@ -4,6 +4,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "@/utils/auth";
+import { getRefreshTokenCookie } from "@/utils/auth";
 
 /**
  * @swagger
@@ -116,6 +117,13 @@ export default async function handler(req, res) {
       const accessToken = generateAccessToken(user);
       const refreshToken = generateRefreshToken(user);
 
+      res.setHeader(
+        "Set-Cookie",
+        getRefreshTokenCookie(
+          refreshToken,
+          60 * 60 * 24 * parseInt(process.env.REFRESH_TOKEN_EXPIRATION)
+        )
+      );
       return res.status(200).json({ accessToken, refreshToken });
     } catch (error) {
       console.error("Error during login:", error);
