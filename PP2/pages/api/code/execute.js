@@ -107,93 +107,53 @@ const prisma = new  PrismaClient();
 export default async function handler(req, res) {
     if (req.method === "POST")  {
         // TODO: rn, this only works with windows commands, we will need to test with teach cs
-        const {content, language, input} = req.body
-            
+        const {content, language, input} = JSON.parse(req.body)
+
         // TODO: see if theres a better way to make temp ids
         const tempID = Math.random() * 10000
         const path = "temp_scripts/" + tempID
-        var command = ""
-        var extension = ""
 
-        const inputPath = path + ".txt"
+        const extensionLookup = {"python": ".py", "javascript": ".js", "java": ".java", "c": ".c", "cpp": ".cpp", "shell": ".sh", "rust": ".rs", "lua": ".lua", "ruby": ".rb", "r": ".R"}
 
         // Writing scripts and inputs as files to run commands with them
         try {
-            await fsp.writeFile(inputPath, input)
-
-            switch(language)   {
-                case "python":
-                    extension = ".py"
-                    command = "python3 " + path + extension + " < " + path + ".txt"
-                    break;
-                case "javascript":
-                    extension = ".js"
-                    command = "node " + path + extension + " < " + path + ".txt"
-                    break;
-                case "java":
-                    extension = ".java"
-                    command = "java " + path + extension + " < " + path + ".txt"
-                    break;
-                case "c":
-                    extension = ".c"
-                    command = tempID + ".exe < " + path + ".txt"
-                    break;
-                case "c++":
-                    extension = ".cpp"
-                    command = tempID + ".exe < " + path + ".txt"
-                    break;
-            }
-            await fsp.writeFile(path + extension, content)
-
+            await fsp.writeFile(path + ".txt", input)
+            await fsp.writeFile(path + extensionLookup[language], content)
         }   catch (error) {
                 console.log(error)
                 res.status(500).json({message: "Write Error"})
         }
 
-        const fullPath = __dirname.slice(0, -28) + "\\temp_scripts\\"
-        // Even if compilation fails, we still need to delete temp files, so we use a flag to bypass the execution segment of this endpoint
-        var compilePass = true
+        // Executing scipt
         try {
-            if (language === "c")   {
-                await exec("gcc " + path + extension + " -o " + tempID + ".exe");
-            }   else if (language === "c++")   {
-                await exec("g++ " + path + extension + " -o " + tempID + ".exe");
-            }
-        }   catch (error)   {
-            const stdout = error.stdout.replace(fullPath, "")
-            const stderr = error.stderr.replace(fullPath, "")
-            deleteTempFiles(inputPath, path, extension, language, tempID, compilePass, res)
-            res.status(402).json({stdout: stdout, stderr: stderr})
-        }
+            var { stdout} = await exec("docker container create -i -t " + language);
+            const container = stdout.replace("\n", "")
 
-        // Executing command
-        if (compilePass)    {
-            try {
-                const { stdout, stderr } = await exec(command);
-                deleteTempFiles(inputPath, path, extension, language, tempID, compilePass, res)
-                res.status(200).json({stdout: stdout, stderr: stderr})
-            }   catch (error) {
-                const stdout = error.stdout.replace(fullPath, "")
-                const stderr = error.stderr.replace(fullPath, "")
-                deleteTempFiles(inputPath, path, extension, language, tempID, compilePass, res)
-                res.status(401).json({stdout: stdout, stderr: stderr})
-            }
+            // TODO: REPLACE NUL with /dev/null
+            var {stdout} = await exec("docker cp " + path + extensionLookup[language] + " " + container + ":script" + extensionLookup[language] + " > NUL && " + 
+                "docker cp " + path + ".txt " + container + ":input.txt > NUL && " + 
+                "docker start " + container + " > NUL && " + 
+                "docker wait " + container + " > NUL && " + 
+                "docker logs " + container + " && " + 
+                "docker rm " + container + " > NUL"
+            );
+            deleteTempFiles(path, extensionLookup[language], res)
+            res.status(200).json({stdout: stdout})
+        }   catch (error) {
+            deleteTempFiles(path, extensionLookup[language], res)
+            console.log(error)
+            res.status(401).json({message: "Error Executing Code"})
         }
     }
   }
 
 
-async function deleteTempFiles(inputPath, path, extension, language, tempID, compilePass, res)  {
+async function deleteTempFiles(path, extension, res)  {
     try {
-        await fsp.unlink(inputPath)
+        await fsp.unlink(path + ".txt")
         await fsp.unlink(path + extension)
-
-        if ((language === "c" || language === "c++") && compilePass) {
-            await fsp.unlink(tempID + ".exe")
-        }
     }   catch (error)   {
         console.log(error)
         res.status(501).json({message: "Deletion Error"})
     }
 }
-
