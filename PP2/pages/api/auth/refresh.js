@@ -1,5 +1,5 @@
 import { verifyRefreshToken, generateAccessToken } from "@/utils/auth";
-import { getRefreshTokenCookie } from "@/utils/auth";
+import prisma from "@/utils/db";
 
 /**
  * @swagger
@@ -75,12 +75,20 @@ export default async function handler(req, res) {
     const refreshToken = req.cookies.token;
 
     if (!refreshToken) {
+      res.setHeader("Set-Cookie", getRefreshTokenCookie(null, 0));
       return res.status(400).json({ error: "No refresh token provided" });
     }
 
     try {
       const payloadDecoded = verifyRefreshToken(refreshToken);
-      const newAccessToken = generateAccessToken(payloadDecoded);
+      const user = await prisma.user.findUnique({
+        where: { id: payloadDecoded.sub },
+      });
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const newAccessToken = generateAccessToken(user);
 
       return res.status(200).json({ accessToken: newAccessToken });
     } catch (error) {

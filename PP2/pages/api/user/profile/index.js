@@ -182,6 +182,24 @@ export default async function handler(req, res) {
         }
 
         try {
+          const userExists = await prisma.user.findUnique({
+            where: { id: userId },
+          });
+
+          if (!userExists) {
+            return res.status(404).json({ error: "User not found" });
+          }
+
+          if (avatarId) {
+            const avatarExists = await prisma.avatar.findUnique({
+              where: { id: avatarId },
+            });
+
+            if (!avatarExists) {
+              return res.status(400).json({ error: "Invalid avatar ID" });
+            }
+          }
+
           const updateData = {
             firstName,
             lastName,
@@ -216,7 +234,7 @@ export default async function handler(req, res) {
           });
         } catch (error) {
           console.error(error);
-          return res.status(500).json({ error: "Error updating profile" });
+          return res.status(500).json({ error: error });
         }
 
       default:
