@@ -50,12 +50,17 @@ export default function Login() {
       setLoading(true);
       const response = await API.auth.login(submission);
       let auth = response.data;
-      console.log(auth);
       let accessToken = auth?.accessToken || null;
-      console.log(accessToken);
 
       if (!_.isNil(accessToken)) {
-        setAuth({ user: auth.user, accessToken: accessToken });
+        setAuth({
+          user: {
+            firstName: auth?.user?.firstName,
+            lastName: auth?.user?.lastName,
+            avatarId: auth?.user?.avatarId,
+          },
+          accessToken: accessToken,
+        });
         await new Promise((resolve) => setTimeout(resolve, 1000));
         router.replace("/");
       } else {
@@ -84,6 +89,7 @@ export default function Login() {
         fill
         priority
         placeholder="blur"
+        sizes="(max-width: 768px) 100vw, 50vw"
         className="absolute inset-0 object-cover"
       />
       <Container

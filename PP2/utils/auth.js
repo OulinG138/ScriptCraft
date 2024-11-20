@@ -20,10 +20,6 @@ export function generateAccessToken(user) {
   return jwt.sign(
     {
       sub: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      isAdmin: user.isAdmin,
-      avatarId: user.avatarId,
     },
     ACCESS_TOKEN_SECRET,
     {
@@ -36,10 +32,6 @@ export function generateRefreshToken(user) {
   return jwt.sign(
     {
       sub: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      isAdmin: user.isAdmin,
-      avatarId: user.avatarId,
     },
     REFRESH_TOKEN_SECRET,
     {
