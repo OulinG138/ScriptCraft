@@ -117,13 +117,29 @@ export default async function handler(req, res) {
     const { postId } = req.query;
 
     try {
+      verifyLoggedIn(req, res);
+      let where = { id: Number(postId) };
+      if (!req.user) {
+        where.isHidden = false;
+      } else {
+        where = {
+          ...where,
+          OR: [{ isHidden: false }, { authorId: req.user.sub }],
+        };
+      }
+      
       const post = await prisma.BlogPost.findUnique({
-        where: { id: Number(postId) },
+        where,
         include: {
-          tags: true,            // Include all associated tags
-          codeTemplates: true,   // Include all associated code templates
+          tags: true,
+          codeTemplates: true,
+          ratings: {
+            where: {
+              authorId: req.user.sub,
+            },
+          },
         },
-      });
+      });      
       
       if (!post) {
         return res.status(404).json({ error: "Post not found" });

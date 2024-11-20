@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Container, Typography, Box, Chip, Pagination, TextField, Button } from "@mui/material";
+import { Container, Typography, Box, Chip, Pagination, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText } from "@mui/material";
 import axios from "axios";
 import Link from "next/link";
+import useAuth from "@/hooks/useAuth";
+import API from "@/routes/API";
 
 interface Post {
   id: number;
@@ -31,19 +33,30 @@ interface Comment {
   authorId: number;
   postId: number;
   replies: Comment[];
+  repliesCount: number;
 }
 
 const PostDetailPage = () => {
     const router = useRouter();
+    const { auth } = useAuth();
     const { id } = router.query;
     const [post, setPost] = useState<Post | null>(null);
+    const [newComment, setNewComment] = useState({content: "", parentCommentId: null});
+    const [newReply, setNewReply] = useState({content: "", parentCommentId: 0});
+    const [openReportDialog, setOpenReportDialog] = useState(false);
+    const [reportExplanation, setReportExplanation] = useState("");
+    const [reportTarget, setReportTarget] = useState<{ type: "post" | "comment"; id: number } | null>(null);
+
     const [comments, setComments] = useState<Comment[]>([]);
     const [page, setPage] = useState(1);
+    const [commentsPerPage, setCommentsPerPage] = useState(5);
+    const [sortBy, setSortBy] = useState("ratings");
     const [totalPages, setTotalPages] = useState(1);
-    const [commentContent, setCommentContent] = useState("");
-    const [replyContent, setReplyContent] = useState<{ [key: number]: string }>({});
-    const [replyingTo, setReplyingTo] = useState<number | null>(null);
-  
+    const [showReplies, setShowReplies] = useState<{ parentCommentId: number; replies: Comment[] }>({ parentCommentId: 0, replies: [] });
+    const [repliesPage, setRepliesPage] = useState(1);
+    const repliesPerPage = 5;
+    const [totalRepliesPages, setTotalRepliesPages] = useState(0);
+
     const fetchPost = async () => {
       if (id) {
         try {
@@ -54,13 +67,11 @@ const PostDetailPage = () => {
         }
       }
     };
-  
+
     const fetchComments = async (page: number) => {
-      if (id) {
+      if (post) {
         try {
-          const response = await axios.get(`/api/posts/${id}/comments`, {
-            params: { page, sortBy: "ratings", limit: 5 },
-          });
+          const response = await API.blogpost.getPaginatedComments(auth.accessToken, post.id, sortBy, page, commentsPerPage)
           setComments(response.data.comments);
           setTotalPages(response.data.totalPages);
         } catch (error) {
@@ -69,185 +80,363 @@ const PostDetailPage = () => {
       }
     };
   
-    const buildCommentTree = (comments: Comment[]) => {
-      const commentMap: { [key: number]: Comment & { replies: Comment[] } } = {};
-      const roots: (Comment & { replies: Comment[] })[] = [];
-  
-      comments.forEach((comment) => {
-        commentMap[comment.id] = { ...comment, replies: [] };
-      });
-  
-      comments.forEach((comment) => {
-        if (comment.parentCommentId) {
-          commentMap[comment.parentCommentId]?.replies.push(commentMap[comment.id]);
-        } else {
-          roots.push(commentMap[comment.id]);
-        }
-      });
-  
-      return roots;
-    };
-  
     const handleCommentSubmit = async () => {
-      if (!commentContent.trim()) return;
+      if (!newComment.content.trim() || !post) return;
       try {
-        await axios.post(`/api/posts/${id}/comments`, { commentContent });
-        setCommentContent("");
-        fetchComments(page);
+        if (!auth.accessToken) {
+          console.log("login");
+          return
+        } else {
+          await API.blogpost.postComment(auth.accessToken, post.id, newComment);
+          setNewComment(prevState => ({
+            ...prevState,
+            content: ""
+          }));
+          fetchComments(page);
+        }
       } catch (error) {
         console.error("Error submitting comment", error);
       }
     };
-  
-    const handleReplySubmit = async (parentId: number) => {
-      const replyText = replyContent[parentId]?.trim();
-      if (!replyText) return;
+
+    const fetchReplies = async(commentId: number) => {
       try {
-        await axios.post(`/api/posts/${id}/comments`, { commentContent: replyText, parentCommentId: parentId });
-        setReplyContent({ ...replyContent, [parentId]: "" });  // Reset the reply content
-        setReplyingTo(null);  // Close the reply form
+        const response = await API.blogpost.getPaginatedReplies(auth.accessToken, commentId, 1, repliesPerPage);
+        setShowReplies({parentCommentId: commentId, replies: response.data.replies});
+        setRepliesPage(1);
+        setTotalRepliesPages(response.data.totalPages);
+      } catch (error) {
+        console.error("Error fetching comments", error);
+      }
+    }
+
+    const handleHideReplies = () => {
+      setShowReplies({parentCommentId: 0, replies: []});
+      setRepliesPage(1);
+      setTotalRepliesPages(0);
+    }
+
+    const handleReply = (commentId: number) => {
+      setNewReply(prevState => ({ ...prevState, parentCommentId: commentId }));
+    };
+  
+    const handleReplySubmit = async (parentCommentId: number) => {
+      if (!newReply.content || !post) return;
+      if (!auth?.accessToken) {
+        console.error("Access token is missing.");
+        return;
+      }
+      try {
+        await API.blogpost.postComment(auth.accessToken, post.id, newReply);
+        setNewReply(prevState => ({
+          ...prevState,
+          content: "",
+          parentCommentId
+        }));
         fetchComments(page);
       } catch (error) {
         console.error("Error submitting reply", error);
       }
     };
-  
-    const handleCancelReply = (parentId: number) => {
-      setReplyingTo(null);
-      setReplyContent({ ...replyContent, [parentId]: "" }); // Clear the content of the reply form
+    
+    const handleCancelReply = () => {
+      setNewReply(prevState => ({
+        ...prevState,
+        content: "",
+        parentCommentId: 0
+      }));
     };
   
     useEffect(() => {
       fetchPost();
       fetchComments(page);
-    }, [id, page, 5]);
+    }, [id]);
   
-    const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    useEffect(() => {
+      fetchComments(page);
+    }, [post, page, sortBy, commentsPerPage]);
+
+    const handleReport = (targetType: "post" | "comment", targetId: number) => {
+      setReportTarget({ type: targetType, id: targetId });
+      setOpenReportDialog(true);
+    };
+  
+    const handleSubmitReport = async () => {
+      if (!auth.accessToken || !reportExplanation.trim() || !reportTarget) return;
+      try {
+        await API.blogpost.postReport(auth.accessToken, {
+          targetType: reportTarget.type,
+          targetId: reportTarget.id,
+          explanation: reportExplanation,
+        })
+        setOpenReportDialog(false);
+        setReportExplanation("");
+      } catch (error) {
+        console.error("Error submitting report", error);
+      }
+    };
+
+    const handlePostVote = async (vote: string) => {
+    };
+    
+    const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
       setPage(value);
     };
-  
-    const renderComments = (comments: (Comment & { replies: Comment[] })[], level = 0) => {
-      return comments.map((comment) => (
-        !comment.isHidden && (
-          <Box key={comment.id} sx={{ pl: level * 3, mb: 2, borderLeft: level > 0 ? "2px solid #ddd" : "none" }}>
-            <Typography variant="body1">{comment.content}</Typography>
-            <Typography variant="body2" color="textSecondary">
-              {new Date(comment.createdAt).toLocaleDateString()} | Rating Count: {comment.ratingCount} | Report Count: {comment.reportCount}
-            </Typography>
-  
-            {/* Reply Button */}
-            <Button
-              variant="text"
-              size="small"
-              onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} // Toggle reply form
-            >
-              Reply
-            </Button>
-  
-            {/* Reply Form */}
-            {replyingTo === comment.id && (
-              <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
-                <TextField
-                  value={replyContent[comment.id] || ""}
-                  onChange={(e) => setReplyContent({ ...replyContent, [comment.id]: e.target.value })}
-                  variant="outlined"
-                  size="small"
-                  sx={{ flexGrow: 1 }}
-                  placeholder="Write a reply..."
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  size="small"
-                  onClick={() => handleReplySubmit(comment.id)}
-                >
-                  Post
-                </Button>
-                <Button
-                  variant="text"
-                  color="secondary"
-                  size="small"
-                  onClick={() => handleCancelReply(comment.id)}
-                >
-                  Cancel
-                </Button>
-              </Box>
-            )}
-  
-            {comment.replies && renderComments(comment.replies, level + 1)}
-          </Box>
-        )
-      ));
-    };
+    
+    const handleMoreReplies = async() => {
+      try {
+        const parentCommentId = showReplies.parentCommentId;
+        const response = await API.blogpost.getPaginatedReplies(auth.accessToken, parentCommentId, repliesPage + 1, repliesPerPage);
+        setShowReplies((prevState) => ({
+          ...prevState,
+          replies: prevState.replies.concat(response.data.replies),
+        }));      
+        setRepliesPage(repliesPage + 1)  
+        setTotalRepliesPages(response.data.totalRepliesPages);
+      } catch (error) {
+        console.error("Error fetching comments", error);
+      }
+    }
   
     if (!post) return <div>Loading...</div>;
-  
-    const commentTree = buildCommentTree(comments);
-  
+    
     return (
       <Container sx={{ pt: 3, pb: 3 }}>
         <Box sx={{ padding: 3, border: "1px solid #ddd", borderRadius: 2 }}>
-          <Typography variant="h4" sx={{ mb: 2 }}>
-            {post.title}
-          </Typography>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-            {new Date(post.createdAt).toLocaleDateString()} | Updated on: {new Date(post.updatedAt).toLocaleDateString()}
-          </Typography>
-  
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-            Rating Count: {post.ratingCount} |
+        <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
+          <div style={{ marginRight: '16px', display: 'flex', flexDirection: 'column' }}>
             <Button 
-                variant="text" 
-                size="small"
-                color="error" 
-                sx={{ ml: 2, textDecoration: 'underline' }} 
-                onClick={() => handleReport(post.id)}
+              onClick={() => handlePostVote("upvote")} 
+              color="primary" 
+              sx={{ padding: '0px', lineHeight: '1', fontSize: '1.5rem', color: 'grey.500'}}
             >
-                Report
+              ▲
             </Button>
+            <Button 
+              onClick={() => handlePostVote("downvote")}
+              color="primary" 
+              sx={{ padding: '0px', lineHeight: '1', fontSize: '1.5rem', color: 'grey.500'}}
+            >
+              ▼
+            </Button>
+          </div>
+
+          <div style={{ flex: 1 }}>
+
+            <Typography variant="h4" sx={{ mb: 2, fontSize: '2rem' }}>
+              {post.title}
             </Typography>
-  
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            {post.content}
-          </Typography>
-  
+
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+              {new Date(post.createdAt).toLocaleDateString()} | Updated on: {new Date(post.updatedAt).toLocaleDateString()} |
+              <Button 
+                  variant="text" 
+                  size="small"
+                  color="error" 
+                  onClick={() => handleReport("post", post.id)}
+              >
+                  Report
+              </Button>
+            </Typography>
+    
+            <Typography variant="body1" sx={{ mb: 3 }}>
+              {post.content}
+            </Typography>
+
+            <Box sx={{ mt: 3 }}>
+            <Typography variant="body1" sx={{ display: "inline", mr: 1 }}>
+              Tags:
+            </Typography>
+            <Box sx={{ display: "inline-flex", flexWrap: "wrap", gap: 1 }}>
+              {post.tags.map((tag) => (
+                <Chip key={tag.id} label={tag.name} />
+              ))}
+            </Box>
+            </Box>
+
+            {/* Code Templates */}
+            <Box sx={{ mt: 3 }}>
+              {post.codeTemplates.length > 0 && (
+                <>
+                  <Typography variant="body1" sx={{ mb: 1 }}>
+                    Code Templates:
+                  </Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    {post.codeTemplates.map((template) => (
+                      <Link key={template.id} href={`/codeTemplates/${template.id}`} passHref>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "primary.main", textDecoration: "underline" }}
+                        >
+                          {template.title}
+                        </Typography>
+                      </Link>
+                    ))}
+                  </Box>
+                </>
+              )}
+            </Box>
+
+            {/* Comment Box*/}
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                Add a Comment:
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={4}
+                value={newComment.content}
+                onChange={(e) => setNewComment(prevState => ({
+                  ...prevState,
+                  content: e.target.value
+                }))}
+                placeholder="Write your comment..."
+                variant="outlined"
+                sx={{ mb: 2 }}
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleCommentSubmit}
+                disabled={!newComment.content.trim()}
+              >
+                Comment
+              </Button>
+            </Box>
+
           {/* Display Comments */}
           <Box sx={{ mt: 3 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>
               Comments:
             </Typography>
-            {commentTree.length === 0 ? (
-              <Typography variant="body2">No comments yet.</Typography>
+
+            {comments.length > 0 ? (
+              <List>
+                {comments.map((comment) => (
+                  <ListItem key={comment.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
+                  
+                  {/* Comment Content */}
+                  <Box sx={{ flexGrow: 1 }} className="box w-full">
+                      <ListItemText
+                        primary={comment.content}
+                        secondary={
+                          <>
+                            <Typography variant="body2" color="textSecondary">
+                              By Author #{comment.authorId} on {new Date(comment.createdAt).toLocaleString()}
+                            </Typography>
+                          </>
+                        }
+                      />
+                  </Box>
+
+                  {/* Buttons */}
+                  <Box className="box w-full" sx={{ color: '#e0e0e0' }}>
+                    <Button
+                      color="primary"
+                      size="small"
+                      onClick={() => handleReply(comment.id)}
+                    >
+                      Reply
+                    </Button>
+                    |
+                    <Button
+                      color="error"
+                      size="small"
+                      onClick={() => handleReport("comment", comment.id)}
+                    >
+                      Report
+                    </Button>
+                    { comment.repliesCount > 0 &&
+                    (showReplies.parentCommentId !== comment.id ? (
+                      <>|<Button
+                      color="primary"
+                      size="small"
+                      onClick={() => fetchReplies(comment.id)}
+                      >Replies </Button></>):
+                      (<>|<Button
+                        color="primary"
+                        size="small"
+                        onClick={handleHideReplies}
+                      >Hide Replies</Button></>))
+                    } 
+                  </Box>
+
+                  {/* Reply Box */}
+                  {newReply.parentCommentId === comment.id && (
+                  <Container style={{ marginTop: '5px' }}>
+                    <TextField
+                      label="Write your reply"
+                      multiline
+                      rows={4}
+                      value={newReply.content}
+                      onChange={(e) => setNewReply(prevState => ({ ...prevState, content: e.target.value }))}
+                      fullWidth
+                    />
+                    <Button
+                      color="primary"
+                      onClick={async () => {
+                        await handleReplySubmit(comment.id);
+                      }}
+                    >
+                      Submit
+                    </Button>
+                    <Button
+                      color="primary"
+                      onClick={handleCancelReply}
+                    >
+                      Cancel
+                    </Button>
+                  </Container>
+                  )}
+
+                  {/* Replies */}
+                  {showReplies.parentCommentId === comment.id && (
+                    showReplies.replies.length > 0 ? (
+                      <Container style={{ marginTop: '5px' }}>
+                        {showReplies.replies.map((reply) => (
+                          <ListItem key={reply.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
+                            <Box sx={{ flexGrow: 1 }} className="box w-full">
+                              <ListItemText
+                                primary={reply.content}
+                                secondary={
+                                  <>
+                                    <Typography variant="body2" color="textSecondary">
+                                      By Author #{reply.authorId} on {new Date(reply.createdAt).toLocaleString()}
+                                    </Typography>
+                                  </>
+                                }
+                              />
+                            </Box>
+                          </ListItem>
+                        ))}
+                        {repliesPage < totalRepliesPages &&
+                        (<Button
+                        color="primary"
+                        size="small"
+                        onClick={() => handleMoreReplies()}
+                        >
+                          More Replies
+                        </Button>)}
+                      </Container>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary" style={{ marginTop: '5px' }}>
+                        No replies
+                      </Typography>
+                    )
+                  )}
+                </ListItem>
+                ))}
+              </List>
             ) : (
-              renderComments(commentTree)
+              <Typography variant="body1" textAlign="center" mt={3}>
+                No comments to display
+              </Typography>
             )}
           </Box>
-  
-          {/* Comment Box */}
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Add a Comment:
-            </Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              value={commentContent}
-              onChange={(e) => setCommentContent(e.target.value)}
-              placeholder="Write your comment..."
-              variant="outlined"
-              sx={{ mb: 2 }}
-            />
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleCommentSubmit}
-              disabled={!commentContent.trim()}
-            >
-              Comment
-            </Button>
-          </Box>
-  
+
+          {/* Comment Pagination */}
+          {comments.length > 0 && (
           <Box sx={{ mt: 3, display: "flex", justifyContent: "center" }}>
             <Pagination
               count={totalPages}
@@ -258,12 +447,36 @@ const PostDetailPage = () => {
               siblingCount={1}
               boundaryCount={1}
             />
-          </Box>
+          </Box>)}
+          </div>
+        </div>
         </Box>
+
+      <Dialog open={openReportDialog} onClose={() => setOpenReportDialog(false)}
+          maxWidth="sm"
+          fullWidth>
+        <DialogTitle>Report</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Explanation"
+            value={reportExplanation}
+            onChange={(e) => setReportExplanation(e.target.value)}
+            fullWidth
+            multiline
+            rows={4}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenReportDialog(false)} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleSubmitReport} color="primary">
+            Submit Report
+          </Button>
+        </DialogActions>
+      </Dialog>
       </Container>
-    );
-  };
-  
-  
+  )
+};
 
 export default PostDetailPage;

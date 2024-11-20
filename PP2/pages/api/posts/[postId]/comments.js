@@ -176,7 +176,7 @@ export default async function handler(req, res) {
       verifyLoggedIn(req, res);
       let where;
       if (!req.user) {
-        where = { postId: Number(postId), isHidden: false };
+        where = { postId: Number(postId), isHidden: false, parentCommentId: null};
       } else {
         where = {
           postId: Number(postId),
@@ -186,7 +186,18 @@ export default async function handler(req, res) {
 
       let results = await prisma.comment.findMany({
         where,
+        include: {
+          author: true,
+          replies: true,
+        },
       });
+      
+      results = results.map(comment => ({
+        ...comment,
+        repliesCount: comment.replies.length,
+        replies: undefined,
+      }));
+      
 
       // Sort results based on the 'sortBy' parameter or createdAt date
       if (sortBy === "ratings") {
