@@ -5,6 +5,7 @@ import {
   generateRefreshToken,
 } from "@/utils/auth";
 import { getRefreshTokenCookie } from "@/utils/auth";
+import _ from "lodash";
 
 /**
  * @swagger
@@ -100,7 +101,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const user = await prisma.user.findUnique({
+      let user = await prisma.user.findUnique({
         where: { email },
       });
 
@@ -116,6 +117,7 @@ export default async function handler(req, res) {
 
       const accessToken = generateAccessToken(user);
       const refreshToken = generateRefreshToken(user);
+      user = _.pick(user, ["firstName", "lastName", "avatarId"]);
 
       res.setHeader(
         "Set-Cookie",
@@ -124,7 +126,8 @@ export default async function handler(req, res) {
           60 * 60 * 24 * parseInt(process.env.REFRESH_TOKEN_EXPIRATION)
         )
       );
-      return res.status(200).json({ accessToken, refreshToken });
+
+      return res.status(200).json({ accessToken, user });
     } catch (error) {
       console.error("Error during login:", error);
       return res.status(500).json({ error: "Internal server error" });

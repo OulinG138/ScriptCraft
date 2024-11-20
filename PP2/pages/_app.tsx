@@ -4,7 +4,7 @@ import type { AppProps } from "next/app";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthProvider";
 import { ThemeProvider, CssBaseline } from "@mui/material";
-import theme from "./Theme";
+import theme from "./theme";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (

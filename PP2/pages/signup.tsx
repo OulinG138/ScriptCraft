@@ -90,11 +90,13 @@ export default function SignUp() {
     loadAvatars();
   }, []);
 
-  // React.useEffect(() => {
-  //   if (!_.isEmpty(auth?.accessToken) && !_.isEmpty(auth?.user)) {
-  //     router.replace("/");
-  //   }
-  // }, [auth]);
+  React.useEffect(() => {
+    console.log("executed");
+    if (!_.isEmpty(auth?.accessToken) && !_.isEmpty(auth?.user)) {
+      console.log("inside");
+      router.replace("/");
+    }
+  }, [auth]);
 
   const [lowercase, setLowercase] = React.useState(false);
   const [uppercase, setUppercase] = React.useState(false);
@@ -227,6 +229,7 @@ export default function SignUp() {
           fill
           priority
           placeholder="blur"
+          sizes="(max-width: 768px) 100vw, 50vw"
           className="absolute inset-0 object-cover"
         />
       </Grid>
@@ -517,6 +520,14 @@ export default function SignUp() {
               >
                 Sign Up
               </Button>
+              <Box display="flex" justifyContent="center" className="mt-1">
+                Already have an account?
+                <Link href="/login">
+                  <Typography className="text-blue-500 underline inline ml-2">
+                    Login
+                  </Typography>
+                </Link>
+              </Box>
             </Box>
           </Box>
         )}
