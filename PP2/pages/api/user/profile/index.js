@@ -155,6 +155,7 @@ export default async function handler(req, res) {
               phoneNumber: true,
               avatar: {
                 select: {
+                  id: true,
                   imagePath: true,
                 },
               },
@@ -202,6 +203,7 @@ export default async function handler(req, res) {
               phoneNumber: true,
               avatar: {
                 select: {
+                  id: true,
                   imagePath: true,
                 },
               },
