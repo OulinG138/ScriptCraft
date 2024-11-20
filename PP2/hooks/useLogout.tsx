@@ -8,7 +8,7 @@ const useLogout = () => {
 
   const logout = async () => {
     try {
-      const response = await API.auth.logout();
+      await API.auth.logout();
       router.replace("/login");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
