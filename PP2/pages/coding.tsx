@@ -1,7 +1,10 @@
 import React, { useState} from "react";
 import { Editor} from '@monaco-editor/react';
 import useAuth from "@/hooks/useAuth";
+import API from "@/routes/API";
 import toast from "react-hot-toast";
+import _ from "lodash";
+
 
 const languages = [
     "python",
@@ -17,7 +20,9 @@ const languages = [
 ]
 
 export default function Coding() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false)
+
   const [editorToggle, setEditor] = useState(true)
   const [savingToggle, setSaving] = useState(false)
 
@@ -38,30 +43,35 @@ export default function Coding() {
   const execute = async () =>    {
     console.log(auth)
     const reqBody = {content: code, language: language, input: input}
-    setIsLoading(true)
+    setIsExecuting(true)
     // TODO: RESTful
-    let res = await fetch("/api/code/execute", {
-        method: "POST",
-        body:   JSON.stringify(reqBody)
-    })
-
-    const data = await res.json();
-    setIsLoading(false)
-    setStdout(data.stdout)
+    let res = await API.code.execute(reqBody)
+    setIsExecuting(false)
+    setStdout(res.data.stdout)
   }
 
   const toggleSave = () =>  {
     setSaving(!savingToggle)
   }
 
-  const triggerSave = () =>   {
+  const triggerSave = async () =>   {
     if (savingToggle) {
       if (auth.user === undefined) {
         toast.error("Only Logged in Users can Save")
       } else if (title === "" || desc === "" || code === "") {
         toast.error("Fields not completed")
       } else  {
-        console.log(auth)
+        setIsSaving(true)
+        const reqBody = { title: title, explanation: desc, codeContent: code, language: language, tags: tags}
+        const res = await API.code.template(reqBody, _.get(auth, "accessToken", ""),)
+        setIsSaving(false)
+
+        if (res.status === 200) {
+          toast.success("Template Successfully Created")
+        } else  {
+          toast.error(res.data.message)
+        }
+        console.log(res)
       }
     } else   {
       setSaving(!savingToggle)
@@ -185,6 +195,13 @@ export default function Coding() {
         </div>
       </div>
 
+      {isSaving && (
+            <div className="flex justify-center items-center p-2 bg-blue-500 space-x-2">
+              <h1 className="text-white">Creating Code Template...</h1>
+              <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
+            </div>
+      )}
+
       <div className="flex flex-col sm:flex-row flex-grow overflow-hidden p-2 sm:p-4 space-y-2 sm:space-y-0 sm:space-x-4">
         <div className="flex flex-col flex-grow bg-white shadow-lg rounded overflow-hidden w-full sm:w-4/5">
           <div className="flex flex-row items-center justify-between bg-gray-100 p-2 sm:p-3 border-b border-gray-300">
@@ -243,8 +260,9 @@ export default function Coding() {
           <div className="bg-gray-100 p-2 sm:p-3 border-b border-gray-300">
             <span className="text-sm sm:text-lg font-semibold">stdout</span>
           </div>
-          {isLoading && (
-            <div className="flex justify-center items-center p-2 bg-green-500">
+          {isExecuting && (
+            <div className="flex justify-center items-center p-2 bg-green-500 space-x-2">
+              <h1 className="text-white">Executing...</h1>
               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
             </div>
           )}

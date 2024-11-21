@@ -107,7 +107,7 @@ const prisma = new  PrismaClient();
 export default async function handler(req, res) {
     if (req.method === "POST")  {
         // TODO: rn, this only works with windows commands, we will need to test with teach cs
-        const {content, language, input} = JSON.parse(req.body)
+        const {content, language, input} = req.body
 
         // TODO: see if theres a better way to make temp ids
         const tempID = Math.random() * 10000
