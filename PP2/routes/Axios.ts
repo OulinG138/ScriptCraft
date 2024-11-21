@@ -37,6 +37,9 @@ authAxiosInstance.interceptors.response.use(
         prevRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return authAxiosInstance(prevRequest);
       } catch (refreshError) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user");
+        window.location.replace("/");
         return Promise.reject(refreshError);
       }
     }

@@ -84,7 +84,14 @@ export default async function handler(req, res) {
     const { firstName, lastName, email, password, avatarId, phoneNumber } =
       req.body;
 
-    if (!firstName || !lastName || !email || !password) {
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !phoneNumber ||
+      !password ||
+      !avatarId
+    ) {
       return res.status(400).json({
         message: "Please provide all the required fields",
       });

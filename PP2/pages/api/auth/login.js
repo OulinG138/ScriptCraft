@@ -12,7 +12,7 @@ import _ from "lodash";
  * /api/auth/login:
  *   post:
  *     summary: User login
- *     description: Authenticates a user and returns access and refresh tokens along with user details.
+ *     description: Authenticates a user by validating their email and password. If successful, it returns an access token, refresh token (via cookie), and basic user details.
  *     tags:
  *       - Auth
  *     requestBody:
@@ -27,7 +27,7 @@ import _ from "lodash";
  *             properties:
  *               email:
  *                 type: string
- *                 description: The user's email.
+ *                 description: The user's email address.
  *                 example: johndoe@example.com
  *               password:
  *                 type: string
@@ -35,7 +35,13 @@ import _ from "lodash";
  *                 example: mySecretPassword123
  *     responses:
  *       200:
- *         description: Login successful, returns access and refresh tokens, along with user details.
+ *         description: Login successful. Returns the access token, user details, and sets the refresh token as a cookie.
+ *         headers:
+ *           Set-Cookie:
+ *             description: Contains the refresh token stored as an HTTP-only cookie.
+ *             schema:
+ *               type: string
+ *               example: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Path=/; Max-Age=2592000; Secure
  *         content:
  *           application/json:
  *             schema:
@@ -43,12 +49,28 @@ import _ from "lodash";
  *               properties:
  *                 accessToken:
  *                   type: string
- *                   description: The JWT access token.
+ *                   description: The JWT access token for authentication.
  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *                 refreshToken:
- *                   type: string
- *                   description: The JWT refresh token.
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 user:
+ *                   type: object
+ *                   description: Basic user information.
+ *                   properties:
+ *                     firstName:
+ *                       type: string
+ *                       description: The user's first name.
+ *                       example: John
+ *                     lastName:
+ *                       type: string
+ *                       description: The user's last name.
+ *                       example: Doe
+ *                     avatarId:
+ *                       type: integer
+ *                       description: The user's avatar ID.
+ *                       example: 1
+ *                     isAdmin:
+ *                       type: boolean
+ *                       description: Whether the user has admin privileges.
+ *                       example: false
  *       400:
  *         description: Missing required fields.
  *         content:
@@ -58,6 +80,7 @@ import _ from "lodash";
  *               properties:
  *                 error:
  *                   type: string
+ *                   description: Error message indicating missing input fields.
  *                   example: Please provide all the required fields
  *       401:
  *         description: Invalid credentials.
@@ -68,6 +91,7 @@ import _ from "lodash";
  *               properties:
  *                 error:
  *                   type: string
+ *                   description: Error message indicating incorrect email or password.
  *                   example: Invalid credentials
  *       500:
  *         description: Internal server error.
@@ -78,6 +102,7 @@ import _ from "lodash";
  *               properties:
  *                 error:
  *                   type: string
+ *                   description: Error message for unexpected issues.
  *                   example: Internal server error
  *       405:
  *         description: Method not allowed.
@@ -88,6 +113,7 @@ import _ from "lodash";
  *               properties:
  *                 error:
  *                   type: string
+ *                   description: Error message for unsupported HTTP methods.
  *                   example: Method not allowed
  */
 export default async function handler(req, res) {
@@ -117,7 +143,7 @@ export default async function handler(req, res) {
 
       const accessToken = generateAccessToken(user);
       const refreshToken = generateRefreshToken(user);
-      user = _.pick(user, ["firstName", "lastName", "avatarId"]);
+      user = _.pick(user, ["firstName", "lastName", "avatarId", "isAdmin"]);
 
       res.setHeader(
         "Set-Cookie",

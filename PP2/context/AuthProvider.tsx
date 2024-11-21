@@ -5,6 +5,7 @@ type User = {
   firstName: string;
   lastName: string;
   avatarId: number;
+  isAdmin: boolean;
 };
 
 type Auth = {
