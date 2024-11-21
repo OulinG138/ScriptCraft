@@ -1,6 +1,4 @@
-import {PrismaClient} from "@prisma/client";
 import {promises as fsp} from "fs";
-import { comma } from "postcss/lib/list";
 
 /**
  * @swagger
@@ -102,14 +100,15 @@ import { comma } from "postcss/lib/list";
 
 const util = require('node:util');
 const exec = util.promisify(require('node:child_process').exec);
-const prisma = new  PrismaClient();
 
+const MEMORY = "512m"
+const TIMEOUT = "2"
+
+// TODO: fails if lots of prints
 export default async function handler(req, res) {
     if (req.method === "POST")  {
-        // TODO: rn, this only works with windows commands, we will need to test with teach cs
         const {content, language, input} = req.body
 
-        // TODO: see if theres a better way to make temp ids
         const tempID = Math.random() * 10000
         const path = "temp_scripts/" + tempID
 
@@ -126,19 +125,35 @@ export default async function handler(req, res) {
 
         // Executing scipt
         try {
-            var { stdout} = await exec("docker container create -i -t " + language);
+            var { stdout} = await exec("docker container create --memory " + MEMORY + " -i -t " + language);
             const container = stdout.replace("\n", "")
 
             // TODO: REPLACE NUL with /dev/null
             var {stdout} = await exec("docker cp " + path + extensionLookup[language] + " " + container + ":script" + extensionLookup[language] + " > NUL && " + 
                 "docker cp " + path + ".txt " + container + ":input.txt > NUL && " + 
                 "docker start " + container + " > NUL && " + 
-                "docker wait " + container + " > NUL && " + 
+                "docker container stop -t " + TIMEOUT + " " + container + " > NUL && " + 
                 "docker logs " + container + " && " + 
+                "docker inspect " + container + " --format={{.State.ExitCode}} && " +
                 "docker rm " + container + " > NUL"
             );
+            const seperator = stdout.indexOf("\n")
+            var out = stdout.slice(0, seperator)
+            var exitCode = stdout.slice(seperator + 1, stdout.length)
+
+            if (exitCode.indexOf("\n") === -1)  {
+                exitCode = out
+                out = ""
+            }
+
             deleteTempFiles(path, extensionLookup[language], res)
-            res.status(200).json({stdout: stdout})
+
+            if (exitCode === "137")    {
+                res.status(201).json({stdout: out})
+            }   else    {
+                res.status(200).json({stdout: out})
+            }
+
         }   catch (error) {
             deleteTempFiles(path, extensionLookup[language], res)
             console.log(error)

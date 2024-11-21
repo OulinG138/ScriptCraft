@@ -41,13 +41,14 @@ export default function Coding() {
   const { auth } = useAuth();
 
   const execute = async () =>    {
-    console.log(auth)
     const reqBody = {content: code, language: language, input: input}
     setIsExecuting(true)
-    // TODO: RESTful
     let res = await API.code.execute(reqBody)
-    setIsExecuting(false)
     setStdout(res.data.stdout)
+    if (res.status === 201) {
+      toast.error("Execution Successful but Timed Out")
+    }
+    setIsExecuting(false)
   }
 
   const toggleSave = () =>  {
