@@ -117,8 +117,8 @@ export default async function handler(req, res) {
     const { postId } = req.query;
 
     try {
-      verifyLoggedIn(req, res);
       let where = { id: Number(postId) };
+      verifyLoggedIn(req, res);
       if (!req.user) {
         where.isHidden = false;
       } else {
@@ -128,16 +128,16 @@ export default async function handler(req, res) {
         };
       }
       
-      const post = await prisma.BlogPost.findUnique({
+      let post = await prisma.BlogPost.findUnique({
         where,
         include: {
           tags: true,
           codeTemplates: true,
-          ratings: {
+          ratings: req.user?.sub ? {
             where: {
-              authorId: req.user.sub,
+              userId: req.user?.sub,
             },
-          },
+          } : false,
         },
       });      
       
@@ -147,13 +147,19 @@ export default async function handler(req, res) {
 
       if (post.isHidden) {
         verifyLoggedIn(req);
-        if (!req.user || req.user.sub != post.authorId) {
+        if (!req.user || req.userId != post.authorId) {
           return res
             .status(403)
             .json({ error: "Unauthorized to view this post" });
         }
       }
 
+      if (post.ratings && post.ratings.length > 0) {
+        post.userRating = post.ratings[0].value;
+      }
+
+      post.ratings = undefined;
+      
       return res.status(200).json(post);
     } catch (error) {
       console.log(error);
@@ -161,7 +167,7 @@ export default async function handler(req, res) {
     }
   } else if (req.method === "PUT") {
     verifyToken(req, res, async () => {
-      const userId = req.user.sub;
+      const userId = req.userId;
       const { postId } = req.query;
       const { title, description, content, tags, codeTemplateIds } = req.body;
 
@@ -247,7 +253,7 @@ export default async function handler(req, res) {
     });
   } else if (req.method === "DELETE") {
     verifyToken(req, res, async () => {
-      const userId = req.user.sub;
+      const userId = req.userId;
       const { postId } = req.query;
 
       try {

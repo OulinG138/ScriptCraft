@@ -1,6 +1,13 @@
+import { access } from "fs";
 import axios, { authAxiosInstance, getJWTHeader } from "../Axios";
 
 const routers = {
+  getBlogPost: async(accessToken: string | undefined, postId: Number) => {
+    if (accessToken) {
+      return authAxiosInstance.get(`/posts/${postId}`, getJWTHeader(accessToken));
+    } else {
+      return authAxiosInstance.get(`/posts/${postId}`);
+    }},
   postBlogPost: async (accessToken: string, payload: object) =>
     authAxiosInstance.post("/posts", payload, getJWTHeader(accessToken)),
   getPaginatedBlogPosts: async (

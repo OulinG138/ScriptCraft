@@ -77,7 +77,7 @@ const BlogPostsPage = () => {
     fetchPosts();
   };
 
-  const handlePageChange = (_: ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (event: ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 

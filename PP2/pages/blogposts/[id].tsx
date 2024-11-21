@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Container, Typography, Box, Chip, Pagination, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText } from "@mui/material";
-import axios from "axios";
 import Link from "next/link";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
@@ -19,6 +18,7 @@ interface Post {
   authorId: number;
   codeTemplates: { id: number; title: string }[];
   tags: { id: number; name: string }[];
+  userRating: number;
 }
 
 interface Comment {
@@ -41,17 +41,19 @@ const PostDetailPage = () => {
     const { auth } = useAuth();
     const { id } = router.query;
     const [post, setPost] = useState<Post | null>(null);
-    const [newComment, setNewComment] = useState({content: "", parentCommentId: null});
-    const [newReply, setNewReply] = useState({content: "", parentCommentId: 0});
-    const [openReportDialog, setOpenReportDialog] = useState(false);
-    const [reportExplanation, setReportExplanation] = useState("");
-    const [reportTarget, setReportTarget] = useState<{ type: "post" | "comment"; id: number } | null>(null);
-
+    
     const [comments, setComments] = useState<Comment[]>([]);
     const [page, setPage] = useState(1);
     const [commentsPerPage, setCommentsPerPage] = useState(5);
     const [sortBy, setSortBy] = useState("ratings");
     const [totalPages, setTotalPages] = useState(1);
+    const [newComment, setNewComment] = useState({content: "", parentCommentId: null});
+    const [newReply, setNewReply] = useState({content: "", parentCommentId: 0});
+    
+    const [openReportDialog, setOpenReportDialog] = useState(false);
+    const [reportExplanation, setReportExplanation] = useState("");
+    const [reportTarget, setReportTarget] = useState<{ type: "post" | "comment"; id: number } | null>(null);
+
     const [showReplies, setShowReplies] = useState<{ parentCommentId: number; replies: Comment[] }>({ parentCommentId: 0, replies: [] });
     const [repliesPage, setRepliesPage] = useState(1);
     const repliesPerPage = 5;
@@ -60,8 +62,9 @@ const PostDetailPage = () => {
     const fetchPost = async () => {
       if (id) {
         try {
-          const response = await axios.get(`/api/posts/${id}`);
+          const response = await API.blogpost.getBlogPost(auth.accessToken, Number(id));
           setPost(response.data);
+          console.log(post)
         } catch (error) {
           console.error("Error fetching post", error);
         }
@@ -204,21 +207,33 @@ const PostDetailPage = () => {
       <Container sx={{ pt: 3, pb: 3 }}>
         <Box sx={{ padding: 3, border: "1px solid #ddd", borderRadius: 2 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '16px' }}>
-          <div style={{ marginRight: '16px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+              {post.ratingCount > 0 ? `+${post.ratingCount}` : post.ratingCount}
+            </Typography>
+
+            <Container style={{ display: 'flex', flexDirection: 'column'}}>
             <Button 
               onClick={() => handlePostVote("upvote")} 
               color="primary" 
-              sx={{ padding: '0px', lineHeight: '1', fontSize: '1.5rem', color: 'grey.500'}}
-            >
-              ▲
-            </Button>
+              sx={{
+                padding: '0px', 
+                lineHeight: '1', 
+                fontSize: '1.5rem', 
+                color: post.userRating === 1 ? '#447cec' : 'grey.500'
+              }}
+            >▲</Button>
             <Button 
               onClick={() => handlePostVote("downvote")}
               color="primary" 
-              sx={{ padding: '0px', lineHeight: '1', fontSize: '1.5rem', color: 'grey.500'}}
-            >
-              ▼
-            </Button>
+              sx={{
+                padding: '0px', 
+                lineHeight: '1', 
+                fontSize: '1.5rem', 
+                color: post.userRating === 0 ? '#447cec' : 'grey.500'
+              }}
+            >▼</Button>
+            </Container>
           </div>
 
           <div style={{ flex: 1 }}>
@@ -317,20 +332,24 @@ const PostDetailPage = () => {
                   <ListItem key={comment.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
                   
                   {/* Comment Content */}
-                  <Box sx={{ flexGrow: 1 }} className="box w-full">
+                  <Box className="box w-full">
                       <ListItemText
                         primary={comment.content}
-                        secondary={
-                          <>
-                            <Typography variant="body2" color="textSecondary">
-                              By Author #{comment.authorId} on {new Date(comment.createdAt).toLocaleString()}
-                            </Typography>
-                          </>
-                        }
                       />
+                      <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                      By Author #{comment.authorId} on {new Date(comment.createdAt).toLocaleString()} |
+                      <Button 
+                          variant="text" 
+                          size="small"
+                          color="error" 
+                          onClick={() => handleReport("post", post.id)}
+                      >
+                          Report
+                      </Button>
+                    </Typography>
                   </Box>
 
-                  {/* Buttons */}
+                  {/* Reply Buttons */}
                   <Box className="box w-full" sx={{ color: '#e0e0e0' }}>
                     <Button
                       color="primary"
@@ -339,21 +358,13 @@ const PostDetailPage = () => {
                     >
                       Reply
                     </Button>
-                    |
-                    <Button
-                      color="error"
-                      size="small"
-                      onClick={() => handleReport("comment", comment.id)}
-                    >
-                      Report
-                    </Button>
                     { comment.repliesCount > 0 &&
                     (showReplies.parentCommentId !== comment.id ? (
                       <>|<Button
                       color="primary"
                       size="small"
                       onClick={() => fetchReplies(comment.id)}
-                      >Replies </Button></>):
+                      >Show Replies</Button></>):
                       (<>|<Button
                         color="primary"
                         size="small"
@@ -396,17 +407,21 @@ const PostDetailPage = () => {
                       <Container style={{ marginTop: '5px' }}>
                         {showReplies.replies.map((reply) => (
                           <ListItem key={reply.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
-                            <Box sx={{ flexGrow: 1 }} className="box w-full">
-                              <ListItemText
-                                primary={reply.content}
-                                secondary={
-                                  <>
-                                    <Typography variant="body2" color="textSecondary">
-                                      By Author #{reply.authorId} on {new Date(reply.createdAt).toLocaleString()}
-                                    </Typography>
-                                  </>
-                                }
-                              />
+                            <Box className="box w-full">
+                                <ListItemText
+                                  primary={comment.content}
+                                />
+                                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                                By Author #{comment.authorId} on {new Date(comment.createdAt).toLocaleString()} |
+                                <Button 
+                                    variant="text" 
+                                    size="small"
+                                    color="error" 
+                                    onClick={() => handleReport("post", post.id)}
+                                >
+                                    Report
+                                </Button>
+                              </Typography>
                             </Box>
                           </ListItem>
                         ))}

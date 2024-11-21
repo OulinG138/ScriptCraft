@@ -119,7 +119,7 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     verifyToken(req, res, async () => {
       const { content, parentCommentId } = req.body;
-      const userId = req.user.sub;
+      const userId = req.userId;
 
       // Check if content is an empty string
       if (!content || content.trim() === "") {
@@ -189,15 +189,21 @@ export default async function handler(req, res) {
         include: {
           author: true,
           replies: true,
+          ratings: req.user?.sub ? {
+            where: {
+              userId: req.user?.sub,
+            },
+          } : false,
         },
       });
-      
+                
       results = results.map(comment => ({
         ...comment,
         repliesCount: comment.replies.length,
         replies: undefined,
+        ratings: undefined,
+        userRating: comment.ratings?.length ? comment.ratings[0].value : undefined,
       }));
-      
 
       // Sort results based on the 'sortBy' parameter or createdAt date
       if (sortBy === "ratings") {

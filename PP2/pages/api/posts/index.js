@@ -211,7 +211,7 @@ export default async function handler(req, res) {
         where = { isHidden: false };
       } else {
         where = {
-          OR: [{ isHidden: false }, { authorId: req.user.sub }],
+          OR: [{ isHidden: false }, { authorId: req.userId }],
         };
       }
 
