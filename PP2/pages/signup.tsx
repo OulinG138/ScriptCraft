@@ -91,9 +91,7 @@ export default function SignUp() {
   }, []);
 
   React.useEffect(() => {
-    console.log("executed");
     if (!_.isEmpty(auth?.accessToken) && !_.isEmpty(auth?.user)) {
-      console.log("inside");
       router.replace("/");
     }
   }, [auth]);
@@ -208,6 +206,23 @@ export default function SignUp() {
       }
     },
   });
+
+  React.useEffect(() => {
+    const value = formik.values.password;
+
+    if (!value || value.trim() === "") {
+      setLowercase(false);
+      setUppercase(false);
+      setNumber(false);
+      setLength(false);
+      return;
+    }
+
+    setLowercase(/(?=.*[a-z])/.test(value));
+    setUppercase(/(?=.*[A-Z])/.test(value));
+    setNumber(/(?=.*\d)/.test(value));
+    setLength(value.length >= 8);
+  }, [formik.values.password]);
 
   return (
     <Grid container component="main" className="min-h-screen">
@@ -523,7 +538,7 @@ export default function SignUp() {
               <Box display="flex" justifyContent="center" className="mt-1">
                 Already have an account?
                 <Link href="/login">
-                  <Typography className="text-blue-500 underline inline ml-2">
+                  <Typography className="text-blue-500 hover:underline inline ml-2">
                     Login
                   </Typography>
                 </Link>

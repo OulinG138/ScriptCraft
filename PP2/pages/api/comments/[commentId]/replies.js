@@ -88,6 +88,14 @@ export default async function handler(req, res) {
 
       let results = await prisma.comment.findMany({
         where,
+        include: {
+          author: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        }
       });
 
       results = results.sort(

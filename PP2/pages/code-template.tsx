@@ -1,11 +1,10 @@
-import React, { useState} from "react";
+import React, { useEffect, useState} from "react";
 import { Editor} from '@monaco-editor/react';
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
 import toast from "react-hot-toast";
 import _ from "lodash";
-import { useRouter } from "next/router";
-
+import { useRouter } from 'next/router';
 
 const languages = [
     "python",
@@ -48,7 +47,6 @@ export default function Coding() {
     let res = await API.code.execute(reqBody)
     setStdout(res.data.stdout.replace(
       /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''))
-    console.log(res)
     if (res.status === 201) {
       toast.error("Execution Successful but Timed Out")
     }
@@ -74,7 +72,7 @@ export default function Coding() {
         if (res.status === 200) {
           toast.success("Template Successfully Created")
           const encryptedId = window.btoa(res.data.template.id)
-          router.push("/code-template?id=" + encryptedId)
+          console.log(encryptedId)
         } else  {
           toast.error(res.data.message)
         }
@@ -103,6 +101,43 @@ export default function Coding() {
     setTags(newTags)
     setCurrTag(tags[0])
   }
+
+  const fillTemplate = async (id: number) =>    {
+    const template = await API.code.getTemplate(id)
+    if (template.status === 200)    {
+        console.log(template)
+        setCode(template.data.result.codeContent)
+        setTitle(template.data.result.title)
+        setDesc(template.data.result.explanation)
+
+        const newTags: string[] = []
+
+        template.data.result.tags.forEach((tag: any) => {
+            newTags.push(tag.name)
+
+        });
+        setTags(newTags)
+    }   else    {
+        router.push("/coding")
+    }
+  }
+
+  useEffect(() => {
+    if (router.isReady) {
+        const encryptedId = router.query.id 
+        if (typeof(encryptedId) === "string")    {
+            try {
+                const id = window.atob(encryptedId)
+                fillTemplate(parseInt(id))
+            }   catch (error)   {
+                router.push("/coding")
+            }
+        }   else    {
+            router.push("/coding")
+        }
+        
+    }
+  }, [router.isReady]);
   
   return (
     <div className="flex flex-col w-full h-screen bg-gray-50 text-gray-900">

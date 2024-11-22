@@ -2,9 +2,11 @@
 import { createContext, useState, ReactNode, useEffect } from "react";
 
 type User = {
+  id: number;
   firstName: string;
   lastName: string;
   avatarId: number;
+  isAdmin: boolean;
 };
 
 type Auth = {

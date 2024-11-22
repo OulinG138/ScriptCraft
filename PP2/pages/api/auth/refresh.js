@@ -1,5 +1,5 @@
 import { verifyRefreshToken, generateAccessToken } from "@/utils/auth";
-import { getRefreshTokenCookie } from "@/utils/auth";
+import prisma from "@/utils/db";
 
 /**
  * @swagger
@@ -52,7 +52,27 @@ import { getRefreshTokenCookie } from "@/utils/auth";
  *               properties:
  *                 error:
  *                   type: string
- *                   example: Invalid or expired refresh token
+ *                   example: Expired refresh token
+ *       401:
+ *         description: Invalid refresh token.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: Invalid refresh token
+ *       404:
+ *         description: User not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: User not found
  *       405:
  *         description: Method not allowed.
  *         headers:
@@ -80,13 +100,24 @@ export default async function handler(req, res) {
 
     try {
       const payloadDecoded = verifyRefreshToken(refreshToken);
-      const newAccessToken = generateAccessToken(payloadDecoded);
+      const user = await prisma.user.findUnique({
+        where: { id: payloadDecoded.sub },
+      });
+      if (!user) {
+        res.setHeader("Set-Cookie", getRefreshTokenCookie(null, 0));
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const newAccessToken = generateAccessToken(user);
 
       return res.status(200).json({ accessToken: newAccessToken });
     } catch (error) {
-      return res
-        .status(401)
-        .json({ error: "Invalid or expired refresh token" });
+      if (error.name === "TokenExpiredError") {
+        res.setHeader("Set-Cookie", getRefreshTokenCookie(null, 0));
+        return res.status(401).json({ error: "Expired refresh token" });
+      }
+
+      return res.status(401).json({ error: "Invalid refresh token" });
     }
   } else {
     res.setHeader("Allow", ["POST"]);

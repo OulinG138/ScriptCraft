@@ -165,7 +165,6 @@ export default async function handler(req, res) {
             title,
             description,
             content,
-            // Connect or create tags if provided
             tags:
               tags && tags.length > 0
                 ? {

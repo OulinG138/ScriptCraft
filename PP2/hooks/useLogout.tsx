@@ -7,12 +7,11 @@ const useLogout = () => {
   const router = useRouter();
 
   const logout = async () => {
+    setAuth({});
+
     try {
       await API.auth.logout();
-      router.replace("/login");
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
-      setAuth({});
+      router.replace("/");
     } catch (err) {
       console.error(err);
     }

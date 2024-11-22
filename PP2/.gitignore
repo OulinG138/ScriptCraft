@@ -9,3 +9,4 @@ prisma/*
 # Except for the prisma schema file
 !prisma/schema.prisma
 !prisma/seed.js
+!prisma/seed.ts

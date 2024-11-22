@@ -5,7 +5,7 @@ interface Rating {
     id: number,
     value: number,
     targetType: "post" | "comment",
-    userId: number,
+    userId: string,
     blogPostId: number,
     commentId: number
 }
@@ -20,10 +20,11 @@ interface Post {
   updatedAt: Date;
   ratingCount: number;
   reportCount: number;
-  authorId: number;
+  authorId: string;
   codeTemplates: { id: number; title: string }[];
   tags: { id: number; name: string }[];
-  userRating?: Rating
+  userRating?: Rating;
+  author: {firstName: string, lastName: string}
 }
 
 interface Comment {
@@ -35,12 +36,14 @@ interface Comment {
   ratingCount: number;
   reportCount: number;
   parentCommentId: number | null;
-  authorId: number;
+  authorId: string;
   postId: number;
   replies: Comment[];
   repliesCount: number;
   userRating?: Rating;
+  author: {firstName: string, lastName: string};
 }
+
 
 interface RatingsButtonsProps {
     element: Post | Comment;

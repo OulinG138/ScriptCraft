@@ -1,6 +1,5 @@
-import prisma from "@/utils/db";
-import { verifyLoggedIn, verifyToken } from "@/utils/auth";
-
+import { verifyToken } from "@/utils/auth";
+import prisma from "@/middleware/ratingCountMiddleware";
 /**
  * @swagger
  * /api/ratings/{ratingId}:

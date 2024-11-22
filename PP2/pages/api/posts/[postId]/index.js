@@ -131,6 +131,12 @@ export default async function handler(req, res) {
       let post = await prisma.BlogPost.findUnique({
         where,
         include: {
+          author: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
           tags: true,
           codeTemplates: true,
           ratings: req.user?.sub ? {

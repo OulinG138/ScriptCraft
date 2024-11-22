@@ -180,13 +180,20 @@ export default async function handler(req, res) {
       } else {
         where = {
           postId: Number(postId),
-          OR: [{ isHidden: false }, { authorId: req.user.sub }],
+          parentCommentId: null,
+          OR: [{ isHidden: false }, { authorId: req.user.sub }]
         };
       }
 
       let results = await prisma.comment.findMany({
         where,
         include: {
+          author: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
           author: true,
           replies: true,
           ratings: req.user?.sub ? {

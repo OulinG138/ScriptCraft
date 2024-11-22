@@ -26,7 +26,7 @@ import API from "@/routes/API";
 
 export default function Login() {
   const router = useRouter();
-  const { setAuth } = useAuth();
+  const { auth, setAuth } = useAuth();
   const [showPassword, setShowPassword] = React.useState(false);
   const [isLoading, setLoading] = React.useState(false);
 
@@ -55,9 +55,11 @@ export default function Login() {
       if (!_.isNil(accessToken)) {
         setAuth({
           user: {
+            id: auth?.user?.id,
             firstName: auth?.user?.firstName,
             lastName: auth?.user?.lastName,
             avatarId: auth?.user?.avatarId,
+            isAdmin: auth?.user?.isAdmin,
           },
           accessToken: accessToken,
         });
@@ -73,6 +75,12 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  React.useEffect(() => {
+    if (!_.isEmpty(auth?.accessToken) && !_.isEmpty(auth?.user)) {
+      router.replace("/");
+    }
+  }, [auth]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 relative">
@@ -156,8 +164,15 @@ export default function Login() {
             <Box display="flex" justifyContent="center" className="mt-4">
               Don’t have an account?
               <Link href="/signup">
-                <Typography className="text-blue-500 underline inline ml-2">
+                <Typography className="text-blue-500 hover:underline inline ml-2">
                   Sign up
+                </Typography>
+              </Link>
+            </Box>
+            <Box display="flex" justifyContent="center" className="mt-2">
+              <Link href="/">
+                <Typography className="text-blue-500 hover:underline inline ml-2">
+                  Go to Home
                 </Typography>
               </Link>
             </Box>

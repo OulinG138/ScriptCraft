@@ -10,7 +10,7 @@ interface Rating {
     id: number,
     value: number,
     targetType: "post" | "comment",
-    userId: number,
+    userId: string,
     blogPostId: number,
     commentId: number
 }
@@ -25,10 +25,11 @@ interface Post {
   updatedAt: Date;
   ratingCount: number;
   reportCount: number;
-  authorId: number;
+  authorId: string;
   codeTemplates: { id: number; title: string }[];
   tags: { id: number; name: string }[];
-  userRating?: Rating
+  userRating?: Rating;
+  author: {firstName: string, lastName: string}
 }
 
 interface Comment {
@@ -40,11 +41,12 @@ interface Comment {
   ratingCount: number;
   reportCount: number;
   parentCommentId: number | null;
-  authorId: number;
+  authorId: string;
   postId: number;
   replies: Comment[];
   repliesCount: number;
   userRating?: Rating;
+  author: {firstName: string, lastName: string};
 }
 
 const PostDetailPage = () => {
@@ -75,7 +77,6 @@ const PostDetailPage = () => {
         try {
           const response = await API.blogpost.getBlogPost(auth.accessToken, Number(id));
           setPost(response.data);
-          console.log('debugging', response.data);
         } catch (error) {
           console.error("Error fetching post", error);
         }
@@ -248,8 +249,8 @@ const PostDetailPage = () => {
               {post.title}
             </Typography>
 
-            <Typography variant="body1" color="textSecondary" sx={{ mb: 1 }}>
-              {new Date(post.createdAt).toLocaleDateString()} | Updated on: {new Date(post.updatedAt).toLocaleDateString()}
+            <Typography variant="body1" color="textSecondary" >
+            By {`${post.author.firstName} ${post.author.lastName} ${post.authorId.slice(-5)}`} | Posted: {new Date(post.createdAt).toLocaleDateString()}  | Last Updated: {new Date(post.updatedAt).toLocaleDateString()}
             </Typography>
 
             <RatingsButtons targetType='post' element={post} onReport={handleReport} onVote={handleVote}></RatingsButtons>
@@ -336,17 +337,18 @@ const PostDetailPage = () => {
                         primary={comment.content}
                       />
                       <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                      By Author #{comment.authorId} on {new Date(comment.createdAt).toLocaleString()}
-                    </Typography>
+                      By {`${comment.author.firstName} ${comment.author.lastName} ${comment.authorId.slice(-5)}`} | Posted: {new Date(comment.createdAt).toLocaleDateString()}  | Last Updated: {new Date(comment.updatedAt).toLocaleDateString()}
+                      </Typography>
                   </Box>
 
                   {/* Reply Buttons */}
                   <Box className="box w-full" sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                  <Button
-                      color="primary"
-                      size="small"
+                    <Button
+                        color="primary"
+                        size="small"
                       onClick={() => handleReply(comment.id)}
                     >Reply</Button>
+
                     { comment.repliesCount > 0 &&
                     (showReplies.parentCommentId !== comment.id ? (
                       <>
@@ -406,11 +408,11 @@ const PostDetailPage = () => {
                           <ListItem key={reply.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
                             <Box className="box w-full">
                                 <ListItemText
-                                  primary={comment.content}
+                                  primary={reply.content}
                                 />
                                 <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                                By Author #{comment.authorId} on {new Date(comment.createdAt).toLocaleString()}
-                              </Typography>
+                                By {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`} | Posted: {new Date(reply.createdAt).toLocaleDateString()}  | Last Updated: {new Date(reply.updatedAt).toLocaleDateString()}
+                                </Typography>
                             </Box>
                           </ListItem>
                         ))}
