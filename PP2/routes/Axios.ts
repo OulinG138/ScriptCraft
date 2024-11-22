@@ -28,6 +28,11 @@ authAxiosInstance.interceptors.response.use(
   },
   async (error) => {
     const prevRequest = error?.config;
+
+    if (prevRequest?.url.includes("/login")) {
+      return Promise.reject(error);
+    }
+
     if (error?.response?.status === 401 && !prevRequest?._retry) {
       prevRequest._retry = true;
       try {
