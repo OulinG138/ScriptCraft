@@ -55,6 +55,10 @@ import _ from "lodash";
  *                   type: object
  *                   description: Basic user information.
  *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       description: The user's id
+ *                       example: 1
  *                     firstName:
  *                       type: string
  *                       description: The user's first name.
@@ -143,7 +147,13 @@ export default async function handler(req, res) {
 
       const accessToken = generateAccessToken(user);
       const refreshToken = generateRefreshToken(user);
-      user = _.pick(user, ["firstName", "lastName", "avatarId", "isAdmin"]);
+      user = _.pick(user, [
+        "id",
+        "firstName",
+        "lastName",
+        "avatarId",
+        "isAdmin",
+      ]);
 
       res.setHeader(
         "Set-Cookie",

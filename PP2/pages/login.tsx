@@ -55,6 +55,7 @@ export default function Login() {
       if (!_.isNil(accessToken)) {
         setAuth({
           user: {
+            id: auth?.user?.id,
             firstName: auth?.user?.firstName,
             lastName: auth?.user?.lastName,
             avatarId: auth?.user?.avatarId,
