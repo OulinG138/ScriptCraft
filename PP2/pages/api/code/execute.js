@@ -137,18 +137,21 @@ export default async function handler(req, res) {
                 "docker inspect " + container + " --format={{.State.ExitCode}} && " +
                 "docker rm " + container + " > NUL"
             );
-            const seperator = stdout.indexOf("\n")
-            var out = stdout.slice(0, seperator)
-            var exitCode = stdout.slice(seperator + 1, stdout.length)
 
-            if (exitCode.indexOf("\n") === -1)  {
-                exitCode = out
-                out = ""
+            const end = stdout.lastIndexOf("\n")
+            const stdoutEnd = stdout.slice(0, end).lastIndexOf("\n")
+            deleteTempFiles(path, extensionLookup[language], res)
+            var exitCode = -1
+            
+            if (stdoutEnd == -1)    {
+                exitCode = stdout.slice(0, end)
+                var out = ""
+            }   else    {
+                exitCode = stdout.slice(stdoutEnd + 1, end)
+                var out = stdout.slice(0, stdoutEnd)
             }
 
-            deleteTempFiles(path, extensionLookup[language], res)
-
-            if (exitCode === "137")    {
+            if (exitCode === "137") {
                 res.status(201).json({stdout: out})
             }   else    {
                 res.status(200).json({stdout: out})
