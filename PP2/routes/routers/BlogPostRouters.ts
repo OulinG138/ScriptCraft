@@ -1,5 +1,4 @@
-import { access } from "fs";
-import axios, { authAxiosInstance, getJWTHeader } from "../Axios";
+import { authAxiosInstance, getJWTHeader } from "../Axios";
 
 const routers = {
   getBlogPost: async(accessToken: string | undefined, postId: Number) => {
@@ -35,7 +34,9 @@ const routers = {
   postComment: async (accessToken: string, postId: Number, payload: object) => 
     authAxiosInstance.post(`/posts/${postId}/comments`, payload, getJWTHeader(accessToken)),  
   postRating: async (accessToken: string, payload: object) => 
-    authAxiosInstance.post(`/posts/ratings`, payload, getJWTHeader(accessToken)),  
+    authAxiosInstance.post(`/ratings`, payload, getJWTHeader(accessToken)),  
+  deleteRating: async(accessToken: string, ratingId: number) => 
+    authAxiosInstance.delete(`/ratings/${ratingId}`, getJWTHeader(accessToken)), 
   getRating: async (accessToken: string | undefined, postId: Number, page: Number) => {
     if (accessToken) {
     authAxiosInstance.get(`/posts/${postId}/ratings`, getJWTHeader(accessToken))

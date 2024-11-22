@@ -155,7 +155,7 @@ export default async function handler(req, res) {
       }
 
       if (post.ratings && post.ratings.length > 0) {
-        post.userRating = post.ratings[0].value;
+        post.userRating = post.ratings[0];
       }
 
       post.ratings = undefined;

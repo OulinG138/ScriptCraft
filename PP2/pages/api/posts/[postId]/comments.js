@@ -202,7 +202,7 @@ export default async function handler(req, res) {
         repliesCount: comment.replies.length,
         replies: undefined,
         ratings: undefined,
-        userRating: comment.ratings?.length ? comment.ratings[0].value : undefined,
+        userRating: comment.ratings?.length ? comment.ratings[0] : undefined,
       }));
 
       // Sort results based on the 'sortBy' parameter or createdAt date
