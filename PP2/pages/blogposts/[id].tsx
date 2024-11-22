@@ -292,11 +292,12 @@ const PostDetailPage = () => {
               )}
             </Box>
 
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Comments:
+            </Typography>
+
             {/* Comment Box*/}
             <Box sx={{ mt: 3 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Add a Comment:
-              </Typography>
               <TextField
                 fullWidth
                 multiline
@@ -322,14 +323,12 @@ const PostDetailPage = () => {
 
           {/* Display Comments */}
           <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Comments:
-            </Typography>
-
             {comments.length > 0 ? (
               <List>
                 {comments.map((comment) => (
-                  <ListItem key={comment.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
+                  <ListItem key={comment.id} className="flex -space-y-2 flex-col items-start w-full"     sx={{
+                    borderTop: comment.id === comments[0].id ? 'none' : '1px solid #e0e0e0'
+                }}>
                   
                   {/* Comment Content */}
                   <Box className="box w-full">

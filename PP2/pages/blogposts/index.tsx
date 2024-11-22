@@ -3,6 +3,7 @@ import {
   Container, Box, Pagination, SelectChangeEvent,
   Alert, Snackbar
 } from "@mui/material";
+
 import { useRouter } from "next/router";
 import CreatePostDialog from "./components/CreatePostDialog";
 import SearchBar from "./components/SearchBar";

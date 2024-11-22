@@ -40,7 +40,7 @@ const PostList = ({ posts, onPostClick }: PostListProps) => (
           Created At: {new Date(post.createdAt).toLocaleDateString()}
         </Typography>
         <Typography variant="body2" color="textSecondary">
-          Rating Count: {post.ratingCount} | Report Count: {post.reportCount}
+          Rating: {post.ratingCount > 0 ? `+${post.ratingCount}` : `${post.ratingCount}`}
         </Typography>
       </Box>
     ))}

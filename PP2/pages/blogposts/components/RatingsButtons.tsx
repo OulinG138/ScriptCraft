@@ -64,23 +64,26 @@ const RatingsButtons = ({ targetType, element, onReport, onVote }: RatingsButton
         <Typography sx={{ fontSize: 25, color: '#e0e0e0' }}>|</Typography>
         
         <Button
-            className="w-10"
+            className={`w-${targetType === 'post' ? '9' : '6'}`} 
             sx={{
-                fontSize: targetType === "comment" ? 20 : 25,
+                fontSize: targetType === "comment" ? 19 : 25,
                 color: element.userRating?.value === 0 ? "#447cec" : "grey",
+                minWidth: 'auto', 
             }}
             onClick={() => onVote(targetType, element, 0)}
         >
         ▼
         </Button>
 
-        <Typography>{element.ratingCount}</Typography>
+        <Typography> {element.ratingCount > 0 ? `+${element.ratingCount}` : `${element.ratingCount}`}
+        </Typography>
         
         <Button
-            className="w-10"
+            className={`w-${targetType === 'post' ? '9' : '6'}`} 
             sx={{
-                fontSize: targetType === "comment" ? 20 : 25,
+                fontSize: targetType === "comment" ? 19 : 25,
                 color: element.userRating?.value === 1 ? "#447cec" : "grey",
+                minWidth: 'auto', 
             }}
             onClick={() => onVote(targetType, element, 1)}
         >▲</Button>

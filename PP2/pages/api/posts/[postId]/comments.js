@@ -119,7 +119,7 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     verifyToken(req, res, async () => {
       const { content, parentCommentId } = req.body;
-      const userId = req.userId;
+      const userId = req.user.sub;
 
       // Check if content is an empty string
       if (!content || content.trim() === "") {

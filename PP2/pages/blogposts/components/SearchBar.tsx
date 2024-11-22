@@ -1,5 +1,7 @@
 import React from "react";
 import { Chip, Box, Typography, TextField, Button, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
 
 type Auth = {
   user?: {
@@ -100,18 +102,17 @@ const SearchBar = ({
           onClick={onClick}
           sx={{ marginLeft: 2 }}
         >
+          <SearchIcon sx={{ pr: 1 }} ></SearchIcon>
           Search
         </Button>
-
       </Box>
-
-  
 
       {auth && <Button
           variant="contained"
           onClick={onCreatePostClick}
           sx={{ marginLeft: 2 }}
         >
+          <EditIcon sx={{ pr: 1 }} ></EditIcon>
           Create Post
         </Button>}
     </Box>
