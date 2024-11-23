@@ -22,6 +22,7 @@ async function main() {
     firstName: "Admin",
     lastName: "User",
     email: "admin@example.com",
+    phoneNumber: "4165550198",
     password: await hashPassword("adminpassword"),
     isAdmin: true,
     avatarId: 1,
