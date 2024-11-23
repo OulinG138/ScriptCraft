@@ -96,7 +96,6 @@ export default async function handler(req, res) {
     const skip = (pageNumber - 1) * pageSize;
 
     try {
-      // Fetch comments with unresolved reports
       const comments = await prisma.comment.findMany({
         where: {
           reportCount: { gt: 0 },
@@ -125,36 +124,27 @@ export default async function handler(req, res) {
         }),
       });
 
-      // Pagination
-      const limitedComments = [];
-      let remainingReports = pageSize;
-      let skippedReports = 0;
-
+      const flattenedReports = [];
       for (const comment of comments) {
-        if (skippedReports + comment.reports.length < skip) {
-          skippedReports += comment.reports.length;
-          continue;
+        for (const report of comment.reports) {
+          flattenedReports.push({
+            reportId: report.id,
+            reason: report.reason,
+            createdAt: report.createdAt,
+            reporter: report.reporter,
+            relatedCommentId: comment.id,
+          });
         }
-        const startIndex = Math.max(0, skip - skippedReports);
-        const reportsToAdd = comment.reports.slice(
-          startIndex,
-          startIndex + remainingReports
-        );
-
-        limitedComments.push({
-          ...comment,
-          reports: reportsToAdd,
-        });
-
-        remainingReports -= reportsToAdd.length;
-        skippedReports = skip;
-
-        if (remainingReports <= 0) break;
       }
 
-      res
-        .status(200)
-        .json({ comments: limitedComments, currentPage: pageNumber, pageSize });
+      const paginatedReports = flattenedReports.slice(skip, skip + pageSize);
+
+      res.status(200).json({
+        reports: paginatedReports,
+        currentPage: pageNumber,
+        pageSize: pageSize,
+        totalReports: flattenedReports.length,
+      });
     } catch (error) {
       console.error("Failed to fetch reported comments:", error);
       res.status(500).json({ error: "Failed to fetch reported comments" });

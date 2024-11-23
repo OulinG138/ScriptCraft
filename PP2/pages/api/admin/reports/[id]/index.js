@@ -96,44 +96,53 @@ export default async function handler(req, res) {
 
     if (req.method === "GET") {
       try {
-        const basicReport = await prisma.report.findUnique({
-          where: { id: parseInt(id, 10) },
+        const report = await prisma.report.findUnique({
+          where: {
+            id: parseInt(id, 10),
+          },
           select: {
             id: true,
             explanation: true,
             targetType: true,
+            createdAt: true,
             reporter: {
-              select: { firstName: true, lastName: true, email: true },
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            blogPost: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                content: true,
+                isHidden: true,
+              },
+            },
+            comment: {
+              select: {
+                id: true,
+                content: true,
+                isHidden: true,
+              },
             },
           },
         });
 
-        if (!basicReport) {
+        if (!report) {
           return res.status(404).json({ error: "Report not found" });
         }
 
-        const additionalData =
-          basicReport.targetType === "post"
-            ? await prisma.blogPost.findUnique({
-                where: { id: basicReport.id },
-                select: {
-                  id: true,
-                  title: true,
-                  description: true,
-                  content: true,
-                },
-              })
-            : await prisma.comment.findUnique({
-                where: { id: basicReport.id },
-                select: { id: true, content: true },
-              });
-
-        const report = {
+        const { blogPost, comment, ...basicReport } = report;
+        const response = {
           ...basicReport,
-          [basicReport.targetType]: additionalData || null,
+          [report.targetType]:
+            report.targetType === "post" ? blogPost : comment,
         };
 
-        res.status(200).json(report);
+        res.status(200).json(response);
       } catch (error) {
         console.error("Error fetching report details:", error);
         res.status(500).json({ error: "Failed to fetch report details" });

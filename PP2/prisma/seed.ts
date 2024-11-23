@@ -24,6 +24,7 @@ async function main() {
     email: "admin@example.com",
     password: await hashPassword("adminpassword"),
     isAdmin: true,
+    avatarId: 1,
   };
 
   // Check if the admin user already exists
