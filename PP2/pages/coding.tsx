@@ -1,4 +1,4 @@
-import React, { useState} from "react";
+import React, { useEffect, useState} from "react";
 import { Editor} from '@monaco-editor/react';
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
@@ -48,7 +48,6 @@ export default function Coding() {
     let res = await API.code.execute(reqBody)
     setStdout(res.data.stdout.replace(
       /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''))
-    console.log(res)
     if (res.status === 201) {
       toast.error("Execution Successful but Timed Out")
     }
@@ -78,7 +77,6 @@ export default function Coding() {
         } else  {
           toast.error(res.data.message)
         }
-        console.log(res)
       }
     } else   {
       setSaving(!savingToggle)
@@ -90,19 +88,54 @@ export default function Coding() {
   }
 
   const addTag = () =>  {
-    var orig = tags
-    var updatedTags = orig.concat([newTag])
-
-    setTags(updatedTags)
-    setNewTag("")
+    var exists = tags.indexOf(newTag) > -1
+    if (exists) {
+      toast.error("Tag Already Added")
+    } else  {
+      var orig = tags;
+      var updatedTags = orig.concat([newTag]);
+  
+      if (tags.length === 0)  {
+        setCurrTag(newTag)
+      }
+      setTags(updatedTags);
+    }
+    setNewTag("");
   }
 
   const deleteTag = () => {
-    var newTags = tags.filter((word) => (!(word === selectTag)))
-
-    setTags(newTags)
-    setCurrTag(tags[0])
+    var newTags = tags.filter((word) => (!(word === selectTag)));
+    
+    setTags(newTags);
+    setCurrTag(newTags[0])
   }
+
+  const fillTemplate = async (id: number) =>    {
+    const template = await API.code.getTemplate(id)
+    if (template.status === 200)    {
+        const data = template.data.result
+        setCode(data.codeContent)
+    }   else    {
+        router.push("/coding")
+    }
+  }
+
+  useEffect(() => {
+    if (router.isReady) {
+        const encryptedId = router.query.id 
+        if (typeof(encryptedId) === "string")    {
+            try {
+                const id = window.atob(encryptedId)
+                fillTemplate(parseInt(id))
+            }   catch (error)   {
+                router.push("/coding")
+            }
+        }   else    {
+            router.push("/coding")
+        }
+        
+    }
+  }, [router.isReady]);
   
   return (
     <div className="flex flex-col w-full h-screen bg-gray-50 text-gray-900">
