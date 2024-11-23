@@ -1,4 +1,4 @@
-import prisma from "@/utils/db";
+import prisma from "@/middleware/ratingCountMiddleware";
 import { verifyLoggedIn, verifyToken } from "@/utils/auth";
 
 /**

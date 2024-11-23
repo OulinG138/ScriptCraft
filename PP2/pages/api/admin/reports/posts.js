@@ -129,36 +129,27 @@ export default async function handler(req, res) {
         }),
       });
 
-      // Pagination
-      const limitedPosts = [];
-      let remainingReports = pageSize;
-      let skippedReports = 0;
-
+      const flattenedReports = [];
       for (const post of blogPosts) {
-        if (skippedReports + post.reports.length < skip) {
-          skippedReports += post.reports.length;
-          continue;
+        for (const report of post.reports) {
+          flattenedReports.push({
+            reportId: report.id,
+            reason: report.reason,
+            createdAt: report.createdAt,
+            reporter: report.reporter,
+            relatedPostId: post.id,
+          });
         }
-        const startIndex = Math.max(0, skip - skippedReports);
-        const reportsToAdd = post.reports.slice(
-          startIndex,
-          startIndex + remainingReports
-        );
-
-        limitedPosts.push({
-          ...post,
-          reports: reportsToAdd,
-        });
-
-        remainingReports -= reportsToAdd.length;
-        skippedReports = skip;
-
-        if (remainingReports <= 0) break;
       }
 
-      res
-        .status(200)
-        .json({ blogPosts: limitedPosts, currentPage: pageNumber, pageSize });
+      const paginatedReports = flattenedReports.slice(skip, skip + pageSize);
+
+      res.status(200).json({
+        reports: paginatedReports,
+        currentPage: pageNumber,
+        pageSize: pageSize,
+        totalReports: flattenedReports.length,
+      });
     } catch (error) {
       console.error("Failed to fetch reported blog posts:", error);
       res.status(500).json({ error: "Failed to fetch reported blog posts" });

@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(uuid())
   firstName   String
   lastName    String
   email       String   @unique
@@ -45,7 +45,7 @@ model CodeTemplate {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  authorId Int
+  authorId String
   author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   parentTemplateId Int?
@@ -68,7 +68,7 @@ model BlogPost {
   ratingCount Int      @default(0)
   reportCount Int      @default(0)
 
-  authorId Int
+  authorId String
   author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   codeTemplates CodeTemplate[] @relation("CodeTemplatesAndBlogPosts")
@@ -95,7 +95,7 @@ model Rating {
   value      Int    @default(0) // 1 - "upvote", 0 - "downvote"
   targetType String // post or comment
 
-  userId Int
+  userId String
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   blogPostId Int?
@@ -112,7 +112,7 @@ model Report {
   isResolved  Boolean  @default(false)
   createdAt   DateTime @default(now())
 
-  reporterId Int
+  reporterId String
   reporter   User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
 
   blogPostId Int?
@@ -135,7 +135,7 @@ model Comment {
   parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: SetNull)
   replies         Comment[] @relation("CommentReplies")
 
-  authorId Int
+  authorId String
   author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   postId Int
