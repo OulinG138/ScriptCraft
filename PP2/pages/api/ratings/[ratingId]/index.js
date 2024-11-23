@@ -1,5 +1,7 @@
 import { verifyToken } from "@/utils/auth";
 import prisma from "@/middleware/ratingCountMiddleware";
+import { verifyToken } from "@/utils/auth";
+
 /**
  * @swagger
  * /api/ratings/{ratingId}:

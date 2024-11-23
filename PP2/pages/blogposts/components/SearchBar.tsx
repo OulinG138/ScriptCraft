@@ -96,12 +96,12 @@ const SearchBar = ({
           <MenuItem value={10}>10</MenuItem>
           <MenuItem value={20}>20</MenuItem>
         </Select>
-      </FormControl>
-      <Button
-          variant="contained"
-          onClick={onClick}
-          sx={{ marginLeft: 2 }}
-        >
+        </FormControl>
+        <Button
+            variant="contained"
+            onClick={onClick}
+            sx={{ marginLeft: 2 }}
+          >
           <SearchIcon sx={{ pr: 1 }} ></SearchIcon>
           Search
         </Button>

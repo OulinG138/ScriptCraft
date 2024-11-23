@@ -27,7 +27,9 @@ const NavbarContent = () => {
     { text: "placeholder", href: "/" },
     { text: "placeholder", href: "/" },
     { text: "placeholder", href: "/" },
-    ...(auth.user?.isAdmin ? [{ text: "Reports", href: "/" }] : []),
+    ...(auth.user?.isAdmin
+      ? [{ text: "Reports", href: "/admin/reports/comments" }]
+      : []),
   ];
 
   useEffect(() => {

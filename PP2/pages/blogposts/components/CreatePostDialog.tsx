@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Box, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from "@mui/material";
-import API from "@/routes/API";
 
 interface CreatePostDialogProps {
   open: boolean;

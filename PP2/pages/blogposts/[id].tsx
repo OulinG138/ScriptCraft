@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Container, Typography, Box, Chip, Pagination, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText } from "@mui/material";
+import { MenuItem, Select, InputLabel, FormControl, Container, Typography, Box, Chip, Pagination, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText, SelectChangeEvent } from "@mui/material";
 import Link from "next/link";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
@@ -217,10 +217,18 @@ const PostDetailPage = () => {
       }
     };
     
+    const handleSortChange = (event: SelectChangeEvent<string>) => {
+      setSortBy(event.target.value);
+    };
+
     const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
       setPage(value);
     };
     
+    const onCommentsPerPageChange = (event: SelectChangeEvent<number>) => {
+      setCommentsPerPage(Number(event.target.value));
+      setPage(1);
+    };
     const handleMoreReplies = async() => {
       try {
         const parentCommentId = showReplies.parentCommentId;
@@ -324,6 +332,33 @@ const PostDetailPage = () => {
 
           {/* Display Comments */}
           <Box sx={{ mt: 3 }}>
+          <FormControl sx={{ marginRight: 2 }}>
+          <InputLabel>Sort By</InputLabel>
+          <Select
+            value={sortBy}
+            onChange={handleSortChange}
+            label="Sort By"
+            size="small"
+          >
+            <MenuItem value="date">Date</MenuItem>
+            <MenuItem value="ratings">Ratings</MenuItem>
+          </Select>
+        </FormControl>
+
+        <FormControl sx={{ marginRight: 2, width: '150px' }}>
+        <InputLabel>Posts Per Page</InputLabel>
+        <Select
+          value={commentsPerPage}
+          onChange={onCommentsPerPageChange}
+          label="Posts Per Page"
+          size="small"
+        >
+          <MenuItem value={5}>5</MenuItem>
+          <MenuItem value={10}>10</MenuItem>
+          <MenuItem value={20}>20</MenuItem>
+        </Select>
+        </FormControl>
+
             {comments.length > 0 ? (
               <List>
                 {comments.map((comment) => (
