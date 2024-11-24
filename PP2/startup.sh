@@ -23,6 +23,21 @@ install_node_ubuntu() {
   echo "Node.js and npm installed successfully."
 }
 
+create_docker_images()  {
+  cd docker_images/
+
+  for dir in */
+  do
+      dir=${dir::-1}
+      echo "installing" $dir "image..."
+      cd $dir 
+      docker build -t $dir .
+      cd ..
+      echo $dir "image installed successfully."
+  done
+  cd ..
+}
+
 # Check if Node.js is installed, and install it if not
 if ! command -v node &>/dev/null; then
   echo "Node.js is not installed. Installing now..."
@@ -30,6 +45,16 @@ if ! command -v node &>/dev/null; then
 else
   echo "Node.js is already installed."
 fi
+
+if ! command -v docker &>/dev/null; then
+  echo "docker is not installed. Installing now..."
+  sudo apt-get install ./docker-desktop-amd64.deb
+  echo "docker installed successfully."
+else
+  echo "docker is already installed."
+fi
+
+create_docker_images
 
 # Check and ensure the necessary programming languages are installed
 echo "Checking required programming languages..."

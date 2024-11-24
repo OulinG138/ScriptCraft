@@ -103,6 +103,7 @@ const exec = util.promisify(require('node:child_process').exec);
 
 const MEMORY = "512m"
 const TIMEOUT = "2"
+const TRASH = "/dev/null"
 
 // TODO: fails if lots of prints
 export default async function handler(req, res) {
@@ -130,12 +131,12 @@ export default async function handler(req, res) {
 
             // TODO: REPLACE NUL with /dev/null
             var {stdout} = await exec("docker cp " + path + extensionLookup[language] + " " + container + ":script" + extensionLookup[language] + " > NUL && " + 
-                "docker cp " + path + ".txt " + container + ":input.txt > NUL && " + 
-                "docker start " + container + " > NUL && " + 
-                "docker container stop -t " + TIMEOUT + " " + container + " > NUL && " + 
+                "docker cp " + path + ".txt " + container + ":input.txt > " + TRASH + " && " + 
+                "docker start " + container + " > " + TRASH + " && " + 
+                "docker container stop -t " + TIMEOUT + " " + container + " > " + TRASH + " && " + 
                 "docker logs " + container + " && " + 
                 "docker inspect " + container + " --format={{.State.ExitCode}} && " +
-                "docker rm " + container + " > NUL"
+                "docker rm " + container + " > " + TRASH
             );
 
             const end = stdout.lastIndexOf("\n")
