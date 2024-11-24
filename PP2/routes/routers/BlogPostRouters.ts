@@ -9,6 +9,8 @@ const routers = {
     }},
   postBlogPost: async (accessToken: string, payload: object) =>
     authAxiosInstance.post("/posts", payload, getJWTHeader(accessToken)),
+  updateBlogPost: async (accessToken: string, postId: number, payload: object) =>
+    authAxiosInstance.put(`/posts/${postId}`, payload, getJWTHeader(accessToken)),
   getPaginatedBlogPosts: async (
     accessToken: string | undefined,
     search: string,

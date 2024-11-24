@@ -173,7 +173,7 @@ export default async function handler(req, res) {
     }
   } else if (req.method === "PUT") {
     verifyToken(req, res, async () => {
-      const userId = req.userId;
+      const userId = req.user.sub;
       const { postId } = req.query;
       const { title, description, content, tags, codeTemplateIds } = req.body;
 
@@ -234,23 +234,52 @@ export default async function handler(req, res) {
             description,
             content,
             tags:
-              tags && tags.length > 0
-                ? {
-                    connectOrCreate: tags.map((tagName) => ({
-                      where: { name: tagName },
-                      create: { name: tagName },
-                    })),
-                  }
-                : undefined,
-            codeTemplates:
-              codeTemplateIds && codeTemplateIds.length > 0
-                ? {
-                    connect: codeTemplateIds.map((id) => ({ id })),
-                  }
-                : undefined,
-          },
-        });
-
+            tags && tags.length > 0
+              ? {
+                  // Disconnect all existing tags
+                  disconnect: await prisma.blogPost
+                    .findUnique({
+                      where: { id: Number(postId) },
+                      select: { tags: { select: { id: true } } }, // Select the IDs of existing tags
+                    })
+                    .then((post) => post?.tags.map((tag) => ({ id: tag.id }))),
+                  connectOrCreate: tags.map((tagName) => ({
+                    where: { name: tagName },
+                    create: { name: tagName },
+                  })),
+                }
+              : {
+                  // Disconnect all existing tags if no new tags are provided
+                  disconnect: await prisma.blogPost
+                    .findUnique({
+                      where: { id: Number(postId) },
+                      select: { tags: { select: { id: true } } }, // Select the IDs of existing tags
+                    })
+                    .then((post) => post?.tags.map((tag) => ({ id: tag.id }))),
+                },
+          codeTemplates:
+            codeTemplateIds && codeTemplateIds.length > 0
+              ? {
+                  // Disconnect all existing code templates
+                  disconnect: await prisma.blogPost
+                    .findUnique({
+                      where: { id: Number(postId) },
+                      select: { codeTemplates: { select: { id: true } } }, // Select the IDs of existing code templates
+                    })
+                    .then((post) => post?.codeTemplates.map((template) => ({ id: template.id }))),
+                  connect: codeTemplateIds.map((id) => ({ id })),
+                }
+              : {
+                  // Disconnect all existing code templates if no new ids are provided
+                  disconnect: await prisma.blogPost
+                    .findUnique({
+                      where: { id: Number(postId) },
+                      select: { codeTemplates: { select: { id: true } } }, // Select the IDs of existing code templates
+                    })
+                    .then((post) => post?.codeTemplates.map((template) => ({ id: template.id }))),
+                },
+        },
+      });
         return res.status(200).json(updatedPost);
       } catch (error) {
         console.log(error);

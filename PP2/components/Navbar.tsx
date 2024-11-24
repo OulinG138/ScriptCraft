@@ -23,10 +23,9 @@ const NavbarContent = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const navLinks = [
-    { text: "placeholder", href: "/" },
-    { text: "placeholder", href: "/" },
-    { text: "placeholder", href: "/" },
-    { text: "placeholder", href: "/" },
+    { text: "Blog Posts", href: "/posts" },
+    { text: "Code Templates", href: "/" },
+    { text: "My Posts", href: "/" },
     ...(auth.user?.isAdmin
       ? [{ text: "Reports", href: "/admin/reports/comments" }]
       : []),

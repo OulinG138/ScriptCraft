@@ -44,17 +44,30 @@ interface Comment {
   author: {firstName: string, lastName: string};
 }
 
-
 interface RatingsButtonsProps {
+    userId: string | null;
     element: Post | Comment;
     targetType: "post" | "comment";
     onReport: (targetType: "post" | "comment", targetId: number) => void;
     onVote: (targetType: "post" | "comment", target: Post | Comment, value: number) => void;
+    openEditPostDialog: () => void;
 }
 
-const RatingsButtons = ({ targetType, element, onReport, onVote }: RatingsButtonsProps) => (
+const RatingsButtons = ({ userId, targetType, element, onReport, onVote, openEditPostDialog }: RatingsButtonsProps) => (
     <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", 
     }}>
+        {element.authorId === userId &&
+        <Button 
+            className={`w-${targetType === 'post' ? '12' : '9'}`} 
+            variant="text" 
+            size={targetType === "comment" ? "small" : "medium"}
+            onClick={() => {openEditPostDialog()}}
+            sx={{ minWidth: 'auto' }}
+            >
+            Edit
+        </Button>
+        }
+
         <Button 
             variant="text" 
             size={targetType === "comment" ? "small" : "medium"}
@@ -64,8 +77,6 @@ const RatingsButtons = ({ targetType, element, onReport, onVote }: RatingsButton
             Report
         </Button>
 
-        <Typography sx={{ fontSize: 25, color: '#e0e0e0' }}>|</Typography>
-        
         <Button
             className={`w-${targetType === 'post' ? '9' : '6'}`} 
             sx={{

@@ -43,6 +43,7 @@ const BlogPostsPage = () => {
     content: "",
     tags: [] as string[],
     codeTemplateLinks: [] as string[],
+    codeTemplateIds: [] as number[]
   });
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -78,7 +79,7 @@ const BlogPostsPage = () => {
     fetchPosts();
   };
 
-  const handlePageChange = (event: ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (_: ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
@@ -99,7 +100,6 @@ const BlogPostsPage = () => {
       if (trimmedTag && !tags.includes(trimmedTag)) {
         setTags((prevTags) => [...prevTags, trimmedTag]);
         setSearchTags("");
-        console.log("debugging", searchTags);
       } else if (tags.includes(trimmedTag)) {
         setSearchTags("");
       }
@@ -111,7 +111,7 @@ const BlogPostsPage = () => {
   };
 
   const handlePostClick = (postId: number) => {
-    router.push(`/blogposts/${postId}`);
+    router.push(`/posts/${window.btoa(String(postId))}`);
   };
 
   const openCreatePostDialog = () => {
@@ -124,10 +124,10 @@ const BlogPostsPage = () => {
 
   const closeCreatePostDialog = () => {
     setCreatePostDialogOpen(false);
-    setNewPost({ title: "", description: "", content: "", tags: [], codeTemplateLinks: [] });
+    setNewPost({ title: "", description: "", content: "", tags: [], codeTemplateLinks: [], codeTemplateIds: []});
   };
 
-  const handleCreatePostChange = (field: string, value: string | string[]) => {
+  const handleCreatePostChange = (field: string, value: string | string[] | number[]) => {
     setNewPost((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -161,6 +161,7 @@ const BlogPostsPage = () => {
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
   };
+
   return (
     <Container sx={{ pt: 3, pb: 3 }}>
         <SearchBar
@@ -193,26 +194,17 @@ const BlogPostsPage = () => {
       </Box>
 
       {createPostDialogOpen && <CreatePostDialog 
+        dialogType="create"
         open={createPostDialogOpen}
-        newPost={newPost}
+        post={newPost}
         onClose={closeCreatePostDialog}
         onChange={handleCreatePostChange}
         onSubmit={handleCreatePostSubmit}
+        openSnackbar={openSnackbar}
+        onCloseSnackbar={handleCloseSnackbar}
+        message={snackbarMessage}
       >
       </CreatePostDialog>}
-      <Snackbar 
-        open={openSnackbar} 
-        autoHideDuration={5000} 
-        onClose={handleCloseSnackbar}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity="info" 
-          sx={{ width: '100%' }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
     </Container>
   );
 };

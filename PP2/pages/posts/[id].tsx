@@ -5,6 +5,7 @@ import Link from "next/link";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
 import RatingsButtons from "./components/RatingsButtons"
+import CreatePostDialog from "./components/CreatePostDialog";
 
 interface Rating {
     id: number,
@@ -52,9 +53,9 @@ interface Comment {
 const PostDetailPage = () => {
     const router = useRouter();
     const { auth } = useAuth();
-    const { id } = router.query;
+    const [id, setId] = useState<number>(0);
     const [post, setPost] = useState<Post | null>(null);
-    
+
     const [comments, setComments] = useState<Comment[]>([]);
     const [page, setPage] = useState(1);
     const [commentsPerPage, setCommentsPerPage] = useState(5);
@@ -72,11 +73,89 @@ const PostDetailPage = () => {
     const repliesPerPage = 5;
     const [totalRepliesPages, setTotalRepliesPages] = useState(0);
 
+    const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
+    const [editPost, setEditPost] = useState({
+      title: "",
+      description: "",
+      content: "",
+      tags: [] as string[],
+      codeTemplateLinks: [] as string[],
+      codeTemplateIds: [] as number[]
+    });
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [openSnackbar, setOpenSnackbar] = useState(false);  
+
+    const openEditPostDialog = () => {
+      if (auth.user) {
+        setCreatePostDialogOpen(true);
+      } else {
+        router.push('/login');
+      }
+    };
+  
+    const closeEditPostDialog = () => {
+      setCreatePostDialogOpen(false);
+      fetchPost();
+    };
+
+    const handleEditPostSubmit = async () => {
+      if (!editPost.title || !editPost.description || !editPost.content) {
+        setSnackbarMessage("Title, description, and content are required.");
+        setOpenSnackbar(true);
+        return;
+      }
+    
+      if (!auth.accessToken) {
+        console.error("Access token is missing");
+        setSnackbarMessage("Error: Login again and retry");
+        setOpenSnackbar(true);
+        return;
+      }
+    
+      try {
+        await API.blogpost.updateBlogPost(auth.accessToken, id, editPost);
+        closeEditPostDialog();
+        fetchPost();
+        setSnackbarMessage("Post edited successfully!");
+        setOpenSnackbar(true);
+      } catch (error) {
+        console.error("Error editing post", error);
+        setSnackbarMessage("Error: Login again and retry");
+        setOpenSnackbar(true);
+      }
+    };
+
+    useEffect(() => {
+      const queryId = router.query.id;
+
+      // Ensure queryId is a string
+      if (typeof queryId === 'string') {
+          try {
+              const decodedString = window.atob(queryId);
+              const id = Number(decodedString);
+              setId(id);
+          } catch (error) {
+              console.error("Error decoding post ID:", error);
+          }
+      } else {
+          console.warn("Query ID is not a string:", queryId);
+      }
+  }, [router.query]);
+
     const fetchPost = async () => {
       if (id) {
         try {
           const response = await API.blogpost.getBlogPost(auth.accessToken, Number(id));
-          setPost(response.data);
+          const post = response.data;
+          setPost(post);          
+          setEditPost({
+            title: post.title,
+            description: post.description,
+            content: post.content,
+            tags: post.tags.map((tag: { id: number; name: string }) => tag.name),
+            codeTemplateLinks: post.codeTemplates.map((template: { id: number }) => `${window.location.origin}/code-template?id=${window.btoa(String(template.id))}`),
+            codeTemplateIds: post.codeTemplates.map((template: { id: number }) => template.id),
+          });
         } catch (error) {
           console.error("Error fetching post", error);
         }
@@ -94,12 +173,11 @@ const PostDetailPage = () => {
         }
       }
     };
-  
+    
     const handleCommentSubmit = async () => {
       if (!newComment.content.trim() || !post) return;
       try {
         if (!auth.accessToken) {
-          console.log("login");
           return
         } else {
           await API.blogpost.postComment(auth.accessToken, post.id, newComment);
@@ -154,6 +232,10 @@ const PostDetailPage = () => {
       }
     };
     
+    const handleCloseSnackbar = () => {
+      setOpenSnackbar(false);
+    };
+
     const handleCancelReply = () => {
       setNewReply(prevState => ({
         ...prevState,
@@ -194,7 +276,6 @@ const PostDetailPage = () => {
     const handleVote = async (targetType: "post" | "comment", target: Post | Comment, value: number) => {
       try {
         if (!auth.accessToken) {
-          console.log("login");
           return
         }
 
@@ -229,6 +310,11 @@ const PostDetailPage = () => {
       setCommentsPerPage(Number(event.target.value));
       setPage(1);
     };
+
+    const handleEditPostChange = (field: string, value: string | string[] | number[]) => {
+      setEditPost((prev) => ({ ...prev, [field]: value }));
+    };
+
     const handleMoreReplies = async() => {
       try {
         const parentCommentId = showReplies.parentCommentId;
@@ -261,9 +347,9 @@ const PostDetailPage = () => {
             By {`${post.author.firstName} ${post.author.lastName} ${post.authorId.slice(-5)}`} | Posted: {new Date(post.createdAt).toLocaleDateString()}  | Last Updated: {new Date(post.updatedAt).toLocaleDateString()}
             </Typography>
 
-            <RatingsButtons targetType='post' element={post} onReport={handleReport} onVote={handleVote}></RatingsButtons>
+            <RatingsButtons userId={auth.user?.id || null} targetType='post' element={post} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} ></RatingsButtons>
     
-            <Typography variant="body1" sx={{ mb: 3 }}>
+            <Typography variant="body1"   sx={{mb: 3, whiteSpace: 'pre-wrap', wordWrap: 'break-word'}}>
               {post.content}
             </Typography>
 
@@ -286,13 +372,13 @@ const PostDetailPage = () => {
                     Code Templates:
                   </Typography>
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                    {post.codeTemplates.map((template) => (
-                      <Link key={template.id} href={`/codeTemplates/${template.id}`} passHref>
+                    {editPost.codeTemplateLinks.map((link) => (
+                      <Link href={link} passHref>
                         <Typography
                           variant="body2"
                           sx={{ color: "primary.main", textDecoration: "underline" }}
                         >
-                          {template.title}
+                          {link}
                         </Typography>
                       </Link>
                     ))}
@@ -379,22 +465,22 @@ const PostDetailPage = () => {
                   {/* Reply Buttons */}
                   <Box className="box w-full" sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
                     <Button
-                        color="primary"
-                        size="small"
+                      color="primary"
+                      size="small"
+                      className={`w-8'}`} 
+                      sx={{ minWidth: 'auto' }}
                       onClick={() => handleReply(comment.id)}
                     >Reply</Button>
 
                     { comment.repliesCount > 0 &&
                     (showReplies.parentCommentId !== comment.id ? (
                       <>
-                      <Typography sx={{ fontSize: 25, color: '#e0e0e0' }}>|</Typography>
                       <Button
                       color="primary"
                       size="small"
                       onClick={() => fetchReplies(comment.id)}
                       >Show Replies</Button></>):
                       (<>
-                      <Typography sx={{ fontSize: 25, color: '#e0e0e0' }}>|</Typography>
                       <Button
                         color="primary"
                         size="small"
@@ -402,9 +488,7 @@ const PostDetailPage = () => {
                       >Hide Replies</Button>
                       </>))
                     } 
-                    <Typography sx={{ fontSize: 25, color: '#e0e0e0' }}>|</Typography>
-                    <RatingsButtons targetType='comment' element={comment} onReport={handleReport} onVote={handleVote}></RatingsButtons>
-
+                    <RatingsButtons userId={auth.user?.id || null} targetType='comment' element={comment} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} ></RatingsButtons>
                   </Box>
 
                   {/* Reply Box */}
@@ -445,9 +529,10 @@ const PostDetailPage = () => {
                                 <ListItemText
                                   primary={reply.content}
                                 />
-                                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                                <Typography variant="body2" color="textSecondary">
                                 By {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`} | Posted: {new Date(reply.createdAt).toLocaleDateString()}  | Last Updated: {new Date(reply.updatedAt).toLocaleDateString()}
                                 </Typography>
+                                <RatingsButtons userId={auth.user?.id || null} targetType='comment' element={comment} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog}></RatingsButtons>
                             </Box>
                           </ListItem>
                         ))}
@@ -516,6 +601,19 @@ const PostDetailPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {createPostDialogOpen && <CreatePostDialog 
+        dialogType="edit"
+        open={createPostDialogOpen}
+        post={editPost}
+        onClose={closeEditPostDialog}
+        onChange={handleEditPostChange}
+        onSubmit={handleEditPostSubmit}
+        openSnackbar={openSnackbar}
+        onCloseSnackbar={handleCloseSnackbar}
+        message={snackbarMessage}
+      >
+      </CreatePostDialog>}
       </Container>
   )
 };
