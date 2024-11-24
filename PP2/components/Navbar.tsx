@@ -19,6 +19,7 @@ import useLogout from "@/hooks/useLogout";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import API from "@/routes/API";
+import DarkReaderToggle from "./DarkReaderToggle";
 
 const NavbarContent = () => {
   const { auth } = useAuth();
@@ -102,12 +103,15 @@ const NavbarContent = () => {
             {loadingAvatar ? (
               <CircularProgress size={24} />
             ) : (
-              <Avatar
-                alt={auth.user?.lastName || "User"}
-                src={avatarUrl || ""}
-                onClick={handleAvatarClick}
-                sx={{ cursor: "pointer", width: 40, height: 40 }}
-              />
+              <>
+                <Avatar
+                  alt={auth.user?.lastName || "User"}
+                  src={avatarUrl || ""}
+                  onClick={handleAvatarClick}
+                  sx={{ cursor: "pointer", width: 40, height: 40 }}
+                />
+                <DarkReaderToggle />
+              </>
             )}
           </>
         ) : (
@@ -133,6 +137,7 @@ const NavbarContent = () => {
                 Signup
               </Button>
             </Link>
+            <DarkReaderToggle />
           </>
         )}
       </div>
@@ -144,7 +149,7 @@ const NavbarContent = () => {
         onClose={toggleDrawer(false)}
         PaperProps={{
           sx: {
-            width: 280, // Made sidebar wider
+            width: 280,
           },
         }}
       >
@@ -154,22 +159,32 @@ const NavbarContent = () => {
             {loadingAvatar ? (
               <CircularProgress size={24} />
             ) : (
-              <Avatar
-                alt={auth.user?.lastName || "User"}
-                src={avatarUrl || ""}
-                sx={{ width: 64, height: 64 }}
-              />
+              <>
+                <Avatar
+                  alt={auth.user?.lastName || "User"}
+                  src={avatarUrl || ""}
+                  sx={{ width: 64, height: 64 }}
+                />
+                <Typography
+                  variant="subtitle1"
+                  className="font-medium text-gray-800"
+                >
+                  {`${auth.user?.firstName} ${auth.user?.lastName}`}
+                </Typography>
+                <DarkReaderToggle />
+              </>
             )}
-            <Typography
-              variant="subtitle1"
-              className="font-medium text-gray-800"
-            >
-              {`${auth.user?.firstName} ${auth.user?.lastName}`}
-            </Typography>
           </div>
         )}
 
         <List>
+          {!isLoggedIn && (
+            <ListItem>
+              <div className="w-full flex justify-center">
+                <DarkReaderToggle />
+              </div>
+            </ListItem>
+          )}
           {navLinks.map((link, index) => (
             <ListItem
               button
