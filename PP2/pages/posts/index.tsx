@@ -5,27 +5,14 @@ import {
 
 import { useRouter } from "next/router";
 import CreatePostDialog from "./components/CreatePostDialog";
-import SearchBar from "./components/SearchBar";
+import SearchBar from "../../components/SearchBar";
 import PostList from "./components/PostList";
-import Alert from "./components/Alert";
+import Alert from "../../components/Alert";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
+import { Post } from "../../components/interfaces";
 
-interface Post {
-  id: number;
-  title: string;
-  description: string;
-  content: string;
-  isHidden: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  ratingCount: number;
-  reportCount: number;
-  authorId: string;
-  author: {firstName: string, lastName: string}
-}
-
-const BlogPostsPage = () => {
+const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
@@ -62,14 +49,31 @@ const BlogPostsPage = () => {
   const fetchPosts = async () => {
     try {
       setIsLoading(true);
-      const response = await API.blogpost.getPaginatedBlogPosts(
-        auth.accessToken,
-        search,
-        tags,
-        sortBy,
-        page,
-        postsPerPage
-      );
+      let response;
+      if (user) {
+        if (!auth.accessToken) {
+          setSnackbarMessage("Error: Please log out and try again");
+          setOpenSnackbar(false);
+          return
+        }
+        response = await API.blogpost.getUserBlogPosts(
+          auth.accessToken,
+          search,
+          tags,
+          sortBy,
+          page,
+          postsPerPage
+        );
+      } else {
+        response = await API.blogpost.getPaginatedBlogPosts(
+          auth.accessToken,
+          search,
+          tags,
+          sortBy,
+          page,
+          postsPerPage
+        );
+      }
       setPosts(response.data.posts);
       setTotalPosts(response.data.totalPosts);
     } catch (error) {
@@ -175,26 +179,27 @@ const BlogPostsPage = () => {
   };
 
   return (
-    <Container sx={{ pt: 2, pb: 2 }}>
-        <Typography variant="h4" className="pb-5">Blog Posts</Typography>
+    <Container sx={{ mb: user ? 3 : 6, mt: user ? 3 : 6 }}>
+      <Typography variant="h4" className="pb-5">{user ? "User Blog Posts" : "Blog Posts"} </Typography>
 
-        <SearchBar
-          auth={auth}
-          search={search}
-          setSearch={setSearch}
-          onKeyDown={handleSearchKeyDown}
-          onTagsChange={setSearchTags}
-          searchTags={searchTags}
-          onClick={handleSearchClick}
-          onTagsKeyDown={handleTagsKeyDown}
-          sortBy={sortBy}
-          onSortChange={handleSortChange}
-          onCreatePostClick={openCreatePostDialog}
-          tags={tags}
-          onTagDelete={handleTagDelete}
-          postsPerPage={postsPerPage}
-          onPostsPerPageChange={onPostsPerPageChange}
-        />
+      <SearchBar
+        auth={auth}
+        type={'post'}
+        search={search}
+        setSearch={setSearch}
+        onKeyDown={handleSearchKeyDown}
+        onTagsChange={setSearchTags}
+        searchTags={searchTags}
+        onClick={handleSearchClick}
+        onTagsKeyDown={handleTagsKeyDown}
+        sortBy={sortBy}
+        onSortChange={handleSortChange}
+        onCreatePostClick={openCreatePostDialog}
+        tags={tags}
+        onTagDelete={handleTagDelete}
+        postsPerPage={postsPerPage}
+        onPostsPerPageChange={onPostsPerPageChange}
+      />
 
       <PostList isLoading={isLoading} posts={posts} onPostClick={handlePostClick}/>
 

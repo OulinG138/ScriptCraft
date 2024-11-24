@@ -92,13 +92,8 @@ export default async function handler(req, res) {
       if (search) {
         where.OR = [
           { title: { contains: search.toLowerCase() } },
-          { content: { contains: search.toLowerCase() } },
-          {
-            codeTemplates: {
-              some: {
-                title: { contains: search.toLowerCase() },
-              },
-            },
+          { explanation: { contains: search.toLowerCase() } },
+          { language: { contains: search.toLowerCase()}
           },
         ];
       }

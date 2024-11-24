@@ -231,6 +231,10 @@ const NavbarContent = () => {
         onClose={handleMenuClose}
       >
         <MenuItem onClick={() => router.push("/profile")}>Profile</MenuItem>
+
+        <MenuItem onClick={() => router.push("/user/posts")}>User Posts</MenuItem>
+        <MenuItem onClick={() => router.push("/user/code-templates")}>User Code Templates</MenuItem>
+
         <MenuItem
           onClick={() => {
             logout();

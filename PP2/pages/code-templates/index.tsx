@@ -5,10 +5,11 @@ import {
 
 import { useRouter } from "next/router";
 import TemplateList from "./components/TemplateList";
-import Alert from "../posts/components/Alert";
-import SearchBar from "./components/SearchBar";
+import SearchBar from "../../components/SearchBar";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
+
+import Alert from "../../components/Alert";
 
 interface Post {
   id: number,
@@ -24,7 +25,7 @@ interface Post {
   updatedAt: Date
 }
 
-const BlogPostsPage = () => {
+const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
@@ -50,15 +51,30 @@ const BlogPostsPage = () => {
   const fetchPosts = async () => {
     try {
       setIsLoading(true);
-      const response = await API.code.getPaginatedTemplates(
-        auth.accessToken,
-        search,
-        tags,
-        page,
-        postsPerPage
-      );
+      let response;
+      if (user) {
+        if (!auth.accessToken) {
+          setSnackbarMessage("Error: Please log out and try again");
+          setOpenSnackbar(false);
+          return
+        }
+        response = await API.code.getUserTemplates(
+          auth.accessToken,
+          search,
+          tags,
+          page,
+          postsPerPage
+        );
+      } else {
+        response = await API.code.getPaginatedTemplates(
+          auth.accessToken,
+          search,
+          tags,
+          page,
+          postsPerPage
+        );
+      }
       setPosts(response.data.templates);
-      console.log(response.data)
       setTotalPosts(response.data.totalPosts);
     } catch (error) {
       console.error("Error fetching posts", error);
@@ -117,11 +133,12 @@ const BlogPostsPage = () => {
     }
   };
   return (
-    <Container sx={{ pt: 2, pb: 2 }}>
+    <Container sx={{ mb: user ? 3 : 6, mt: user ? 3 : 6 }}>
       <Typography variant="h4" className="pb-5">Code Templates</Typography>
 
       <SearchBar
           auth={auth}
+          type={"template"}
           search={search}
           setSearch={setSearch}
           onKeyDown={handleSearchKeyDown}
@@ -149,10 +166,10 @@ const BlogPostsPage = () => {
         color="primary"
       />
       }
-      
+
       <Alert message={snackbarMessage} openSnackbar={openSnackbar} setOpenSnackbar={setOpenSnackbar} />
     </Container>
   );
 };
 
-export default BlogPostsPage;
+export default TemplatesPage;

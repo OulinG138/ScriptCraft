@@ -6,7 +6,7 @@ import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
 import RatingsButtons from "./components/RatingsButtons"
 import CreatePostDialog from "./components/CreatePostDialog";
-import Alert from "./components/Alert";
+import Alert from "../../components/Alert";
 import ReportDialog from "./components/ReportDialog";
 import DeleteDialog from "./components/DeleteDialog";
 
