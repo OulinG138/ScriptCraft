@@ -1,11 +1,9 @@
-// components/DarkReaderToggle.tsx
 import React from "react";
 import { IconButton, Tooltip } from "@mui/material";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import dynamic from "next/dynamic";
 
-// The actual toggle component
 const ToggleComponent = () => {
   const [isDark, setIsDark] = React.useState(() =>
     typeof window !== "undefined"
@@ -100,7 +98,6 @@ const ToggleComponent = () => {
   );
 };
 
-// Export the dynamic component with SSR disabled
 const DarkReaderToggle = dynamic(() => Promise.resolve(ToggleComponent), {
   ssr: false,
 });
