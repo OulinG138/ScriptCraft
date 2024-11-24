@@ -1,5 +1,5 @@
 import prisma from "@/utils/db";
-import { verifyToken } from "@/utils/auth";
+import { verifyLoggedIn } from "@/utils/auth";
 
 /**
  * @swagger
@@ -66,38 +66,119 @@ import { verifyToken } from "@/utils/auth";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    verifyToken(req, res, async () => {
-      const userId = req.user.sub;
-      const { page = 1, limit = 10 } = req.query;
+    try {
+      const {
+        search,
+        sortBy = "ratings",
+        page = 1,
+        limit = 10,
+        codeTemplateId,
+        searchTags,
+      } = req.query;
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+      const skip = (pageNum - 1) * limitNum;
 
-      const pageNumber = parseInt(page, 10);
-      const pageSize = parseInt(limit, 10);
+      verifyLoggedIn(req, res);
+      let where =  { authorId: req.user.sub };
 
-      try {
-        const totalPosts = await prisma.blogPost.count({
-          where: { authorId: parseInt(userId) },
-        });
-
-        const posts = await prisma.BlogPost.findMany({
-          where: { authorId: parseInt(userId) },
-          skip: (pageNumber - 1) * pageSize,
-          take: pageSize,
-        });
-
-        const totalPages = Math.ceil(totalPosts / pageSize);
-
-        return res.status(200).json({
-          posts,
-          totalPosts,
-          page: pageNumber,
-          pageSize,
-          totalPages,
-        });
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-        return res.status(500).json({ error: "Internal Server Error" });
+      // Add filters based on the search query if it exists
+      if (search) {
+        where.OR = [
+          { title: { contains: search.toLowerCase() } },
+          { content: { contains: search.toLowerCase() } },
+          {
+            codeTemplates: {
+              some: {
+                title: { contains: search.toLowerCase() },
+              },
+            },
+          },
+        ];
       }
-    });
+
+      // Add filter for codeTemplateId if it exists
+      if (codeTemplateId) {
+        if (!where.AND) where.AND = [];
+        where.AND.push({
+          codeTemplates: {
+            some: {
+              id: Number(codeTemplateId),
+            },
+          },
+        });
+      }
+
+      // Add filter for tags if it exists
+      if (searchTags) {
+        const tags = searchTags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag);
+      
+        if (!where.AND) where.AND = [];
+        where.AND.push({
+          AND: tags.map((tag) => ({
+            tags: {
+              some: {
+                name: {
+                  equals: tag.toLowerCase(),
+                },
+              },
+            },
+          })),
+        });
+      }
+
+      // Fetch results from the database based on the 'where' condition
+      let results = await prisma.blogPost.findMany({
+        where,
+        include: {
+          author: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          }
+        }
+      });
+
+      // Sort results based on the 'sortBy' parameter or createdAt date
+      if (sortBy === "ratings") {
+        results = results.sort((a, b) => {
+          const aRatingCount = a.ratingCount;
+          const bRatingCount = b.ratingCount;
+          return bRatingCount - aRatingCount;
+        });
+      } else {
+        results = results.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+      }
+
+      // Apply pagination after sorting
+      const paginatedResults = results.slice(skip, skip + limitNum);
+
+      const resultsWithoutRatings = paginatedResults.map((result) => {
+        const { ratings, ...resultWithoutRatings } = result;
+        return resultWithoutRatings;
+      });
+
+      const totalPosts = results.length;
+
+      const response = {
+        posts: resultsWithoutRatings,
+        totalPosts,
+        page: pageNum,
+        pagesize: limitNum,
+        totalPages: Math.ceil(totalPosts / limitNum),
+      };
+
+      return res.status(200).json(response);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   } else {
     return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }

@@ -434,7 +434,7 @@ const PostDetailPage = () => {
             </FormControl>
 
             <FormControl sx={{ marginRight: 2, width: '150px' }}>
-              <InputLabel>Posts Per Page</InputLabel>
+              <InputLabel>Comments Per Page</InputLabel>
               <Select
                 value={commentsPerPage}
                 onChange={onCommentsPerPageChange}

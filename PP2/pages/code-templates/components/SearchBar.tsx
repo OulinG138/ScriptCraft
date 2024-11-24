@@ -68,18 +68,6 @@ const SearchBar = ({
           onKeyDown={onTagsKeyDown}
           sx={{ marginRight: 2 }}
         />
-        <FormControl sx={{ marginRight: 2 }}>
-          <InputLabel>Sort By</InputLabel>
-          <Select
-            value={sortBy}
-            onChange={onSortChange}
-            label="Sort By"
-            size="small"
-          >
-            <MenuItem value="date">Date</MenuItem>
-            <MenuItem value="ratings">Ratings</MenuItem>
-          </Select>
-        </FormControl>
 
         <FormControl sx={{ marginRight: 2, width: '150px' }}>
         <InputLabel>Posts Per Page</InputLabel>
@@ -110,8 +98,9 @@ const SearchBar = ({
           sx={{ marginLeft: 2 }}
         >
           <EditIcon sx={{ pr: 1 }} ></EditIcon>
-          Create Post
+          Create Template
         </Button>}
+        
     </Box>
 
     <Box sx={{ display: 'flex', flexWrap: 'wrap', marginBottom: 2 }}>

@@ -1,179 +1,166 @@
-// Use two methods for forking and editing
-import { PrismaClient } from "@prisma/client";
+
+import { verifyLoggedIn } from "@/utils/auth";
+import prisma from "@/utils/db";
 
 /**
  * @swagger
  * /api/code/search:
  *   get:
- *     summary: Searches code templates
- *     description: Allows users to get a list of all code templates satifying certain filters
+ *     summary: Retrieve a paginated list of posts
+ *     description: This endpoint allows a user or visitor to retreive a paginated list of posts.
+ *     security:
+ *       - bearerAuth: []
  *     tags:
  *       - Code
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - pageSize
- *               - pageNumber
- *             properties:
- *               title:
- *                 type: string
- *                 description: The title of the requested code template
- *                 example: Hello World
- *               explanation:
- *                 type: string
- *                 description: A description of what the code template does
- *                 example: Prints "Hello World"
- *               language:
- *                 type: string
- *                 description: The coding language the code template is in
- *                 example: python
- *               tags:
- *                 type: array
- *                 description: A list of tags to give to the code template
- *                 example: ["basic"]
- *               pageSize:
- *                 type: int
- *                 description: The number of templates to return
- *                 example: 20
- *               pageNumber:
- *                 type: int
- *                 description: From all possible results, returns the pageNumber-th set of pageSize results (1 indexed)
- *                 example: 1
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         description: A string of keywords to search for.
+ *         required: false
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: searchTags
+ *         description: A comma-separated list of tags to filter by.
+ *         required: false
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sortBy
+ *         description: The options to sort by. Defaults to ratings.
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [ratings, date]
+ *       - in: query
+ *         name: codeTemplateId
+ *         description: A code template ID to filter by.
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: page
+ *         description: The page number for pagination. Defaults to 1.
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         description: The number of posts per page. Defaults to 10.
+ *         schema:
+ *           type: integer
+ *           default: 10
  *     responses:
  *       200:
- *         description: Fetch successful, returns paginated results
+ *         description: A list of posts
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: "Fetch successful"
- *                 result:
+ *                 posts:
  *                   type: array
  *                   items:
- *                      type: object
- *                   example:
- *                      - title:
- *                          type: string
- *                          example: Hello World
- *                        explanation:
- *                          type: string
- *                          example: Prints "Hello World"
- *                        codeContent:
- *                          type: string
- *                          example: print("Hello World")
- *                        language:
- *                          type: string
- *                          example: python
- *                        authorId:
- *                          type: int
- *                          example: 1
- *                        parentTemplateId:
- *                          type: int | null
- *                          example: 1
- *                        tags:
- *                          type: array
- *                          example:
- *                             - id: 1
- *                               name: "tag"
- *
+ *                      $ref: '#/components/schemas/Post'
+ *                 totalPosts:
+ *                   type: integer
+ *                 page:
+ *                   type: integer
+ *                 pageSize:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
  *       405:
  *         description: Method not allowed.
  *       500:
- *         description: Template Fetch Failed
- */
-
-const prisma = new PrismaClient();
-
-/**
- * Implemented User Stories:
- *
- * As a user, I want to view and search through my list of my saved templates,
- * including their titles, explanations, and tags, so that I can easily find and reuse them.
- *  - Make a GET request satisfying above swagger docs with the requested authorID and other applicable filters.
- *    Assume that pageSize and pageNumber are present, of the valid type, and both > 0.
- *
- * As a visitor, I want to search through all available templates by title, tags, or content so that I can quickly
- * find relevant code for my needs.
- *  - Again, make a GET request satisfying the above swagger docs with the requested authorID. Same assumptions as previous case.
+ *         description: Internal server error.
  */
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    const {
-      title,
-      explanation,
-      language,
-      tags,
-      authorID,
-      pageSize,
-      pageNumber,
-    } = req.body;
     try {
-      var searchTags = [];
-      if (tags) {
-        searchTags = tags;
-      } else {
-        searchTags = [];
+      const {
+        search,
+        page = 1,
+        limit = 10,
+        searchTags,
+      } = req.query;
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+      const skip = (pageNum - 1) * limitNum;
+
+      let where = {};
+      // Add filters based on the search query if it exists
+      if (search) {
+        where.OR = [
+          { title: { contains: search.toLowerCase() } },
+          { content: { contains: search.toLowerCase() } },
+          {
+            codeTemplates: {
+              some: {
+                title: { contains: search.toLowerCase() },
+              },
+            },
+          },
+        ];
       }
 
-      var result = await prisma.CodeTemplate.findMany({
-        where: {
-          title: { contains: title },
-          explanation: { contains: explanation },
-          language: { contains: language },
-          authorId: authorID,
-          tags: tags
-            ? {
-                some: { name: { in: searchTags } },
-              }
-            : undefined,
-        },
+      // Add filter for tags if it exists
+      if (searchTags) {
+        const tags = searchTags
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag);
+      
+        if (!where.AND) where.AND = [];
+        where.AND.push({
+          AND: tags.map((tag) => ({
+            tags: {
+              some: {
+                name: {
+                  equals: tag.toLowerCase(),
+                },
+              },
+            },
+          })),
+        });
+      }
+
+      // Fetch results from the database based on the 'where' condition
+      let results = await prisma.codeTemplate.findMany({
+        where,
         include: {
-          tags: true,
-        },
+          author: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          }
+        }
       });
-      // So the filtering seems to include code templates with no tags if impossible filters are applied, and i cant find any elegant means of removing them, hence this
-      if (tags) {
-        console.log("test");
-        result = result.filter(verifyTags);
-      }
 
-      const paginatedResult = paginateArray(result, pageSize, pageNumber);
-      res
-        .status(200)
-        .json({ message: "Fetch successful", result: paginatedResult });
-    } catch (err) {
-      console.log(err);
-      res.status(500).json({ message: "Template Fetch Failed", error: err });
+      // Apply pagination after sorting
+      const paginatedResults = results.slice(skip, skip + limitNum);
+
+      const resultsWithoutRatings = paginatedResults.map((result) => {
+        const { ratings, ...resultWithoutRatings } = result;
+        return resultWithoutRatings;
+      });
+
+      const totalPosts = results.length;
+
+      const response = {
+        templates: resultsWithoutRatings,
+        totalPosts,
+        page: pageNum,
+        pagesize: limitNum,
+        totalPages: Math.ceil(totalPosts / limitNum),
+      };
+
+      return res.status(200).json(response);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal Server Error" });
     }
-  } else {
-    res.status(405).json({ message: "Method not allowed" });
   }
 }
 
-function verifyTags(elem) {
-  return elem.tags.length > 0;
-}
-
-function paginateArray(arr, pageSize, pageNumber) {
-  var start = pageSize * (pageNumber - 1);
-  var idxs = [...Array(pageSize).keys()];
-  var elems = [];
-
-  idxs.forEach((idx) => {
-    idx += start;
-
-    if (idx < arr.length) {
-      elems.push(arr[idx]);
-    }
-  });
-
-  return elems;
-}

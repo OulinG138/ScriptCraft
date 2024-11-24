@@ -4,10 +4,10 @@ import {
 } from "@mui/material";
 
 import { useRouter } from "next/router";
-import CreatePostDialog from "./components/CreatePostDialog";
-import SearchBar from "./components/SearchBar";
-import PostList from "./components/PostList";
-import Alert from "./components/Alert";
+import CreatePostDialog from "../posts/components/CreatePostDialog";
+import SearchBar from "../posts/components/SearchBar";
+import PostList from "../posts/components/PostList";
+import Alert from "../posts/components/Alert";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
 
@@ -61,17 +61,19 @@ const BlogPostsPage = () => {
   // post handlers
   const fetchPosts = async () => {
     try {
-      setIsLoading(true);
-      const response = await API.blogpost.getPaginatedBlogPosts(
-        auth.accessToken,
-        search,
-        tags,
-        sortBy,
-        page,
-        postsPerPage
-      );
-      setPosts(response.data.posts);
-      setTotalPosts(response.data.totalPosts);
+      if (auth.accessToken) {
+        setIsLoading(true);
+        const response = await API.blogpost.getUserBlogPosts(
+          auth.accessToken,
+          search,
+          tags,
+          sortBy,
+          page,
+          postsPerPage
+        );
+        setPosts(response.data.posts);
+        setTotalPosts(response.data.totalPosts);
+      }
     } catch (error) {
       console.error("Error fetching posts", error);
     } finally {

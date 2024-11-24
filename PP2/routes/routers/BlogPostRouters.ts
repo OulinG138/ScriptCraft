@@ -33,6 +33,24 @@ const routers = {
       return authAxiosInstance.get(`/posts?${queryString}`);
     }
   },
+  getUserBlogPosts: async (
+    accessToken: string,
+    search: string,
+    tags: string[],
+    sortBy: string,
+    page: number,
+    limit: number
+  ) => {
+    const queryParams: Record<string, string> = {
+      search,
+      searchTags: tags.join(", "),
+      sortBy,
+      page: page.toString(),
+      limit: limit.toString(),
+    };
+    const queryString = new URLSearchParams(queryParams).toString();
+    return authAxiosInstance.get(`/user/posts?${queryString}`, getJWTHeader(accessToken));
+  },
   postComment: async (accessToken: string, postId: Number, payload: object) => 
     authAxiosInstance.post(`/posts/${postId}/comments`, payload, getJWTHeader(accessToken)),   
   postRating: async (accessToken: string, payload: object) => 

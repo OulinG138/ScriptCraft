@@ -24,8 +24,8 @@ const NavbarContent = () => {
 
   const navLinks = [
     { text: "Blog Posts", href: "/posts" },
-    { text: "Code Templates", href: "/" },
-    { text: "My Posts", href: "/" },
+    { text: "Code Templates", href: "/code-templates" },
+    { text: "My Posts", href: "/user/posts" },
     ...(auth.user?.isAdmin
       ? [{ text: "Reports", href: "/admin/reports/comments" }]
       : []),
