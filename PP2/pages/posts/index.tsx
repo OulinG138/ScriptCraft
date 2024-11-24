@@ -1,14 +1,13 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { 
-  Container, Box, Pagination, SelectChangeEvent,
-  Alert, Snackbar
+  Container, Pagination, SelectChangeEvent
 } from "@mui/material";
 
 import { useRouter } from "next/router";
 import CreatePostDialog from "./components/CreatePostDialog";
 import SearchBar from "./components/SearchBar";
 import PostList from "./components/PostList";
-
+import Alert from "./components/Alert";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
 
@@ -22,21 +21,30 @@ interface Post {
   updatedAt: Date;
   ratingCount: number;
   reportCount: number;
-  authorId: number;
+  authorId: string;
+  author: {firstName: string, lastName: string}
 }
 
 const BlogPostsPage = () => {
+  // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
+
+  // posts states
+  const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<Post[]>([]);
   const [totalPosts, setTotalPosts] = useState(0);
   const [page, setPage] = useState(1);
+
+  // search states
   const [search, setSearch] = useState("");
   const [searchTags, setSearchTags] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("ratings");
-  const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
   const [postsPerPage, setPostsPerPage] = useState(5);
+
+  // create post states
+  const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
   const [newPost, setNewPost] = useState({
     title: "",
     description: "",
@@ -45,11 +53,15 @@ const BlogPostsPage = () => {
     codeTemplateLinks: [] as string[],
     codeTemplateIds: [] as number[]
   });
+
+  // snackbar alert states
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
+  // post handlers
   const fetchPosts = async () => {
     try {
+      setIsLoading(true);
       const response = await API.blogpost.getPaginatedBlogPosts(
         auth.accessToken,
         search,
@@ -62,23 +74,16 @@ const BlogPostsPage = () => {
       setTotalPosts(response.data.totalPosts);
     } catch (error) {
       console.error("Error fetching posts", error);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  };;
 
   const onPostsPerPageChange = (event: SelectChangeEvent<number>) => {
     setPostsPerPage(Number(event.target.value));
     setPage(1);
   };
   
-  useEffect(() => {
-    fetchPosts();
-  }, [page, sortBy, tags, postsPerPage]);
-
-  const handleSearchClick = () => {
-    setPage(1);
-    fetchPosts();
-  };
-
   const handlePageChange = (_: ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
@@ -87,10 +92,42 @@ const BlogPostsPage = () => {
     setSortBy(event.target.value);
   };
 
+  const handlePostClick = (postId: number) => {
+    router.push(`/posts/${window.btoa(String(postId))}`);
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, [page, sortBy, tags, postsPerPage]);
+
+  // search handlers
+  const handleSearchClick = () => {
+    setPage(1);
+    fetchPosts();
+  };
+
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       handleSearchClick();
     }
+  };
+
+  // create post handlers
+  const openCreatePostDialog = () => {
+    if (auth.user) {
+      setCreatePostDialogOpen(true);
+    } else {
+      router.push('/login');
+    }
+  };
+
+  const closeCreatePostDialog = () => {
+    setCreatePostDialogOpen(false);
+    setNewPost({ title: "", description: "", content: "", tags: [], codeTemplateLinks: [], codeTemplateIds: []});
+  };
+
+  const handleCreatePostChange = (field: string, value: string | string[] | number[]) => {
+    setNewPost((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleTagsKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -108,27 +145,6 @@ const BlogPostsPage = () => {
   
   const handleTagDelete = (tagToDelete: string) => {
     setTags((prevTags) => prevTags.filter((tag) => tag !== tagToDelete));
-  };
-
-  const handlePostClick = (postId: number) => {
-    router.push(`/posts/${window.btoa(String(postId))}`);
-  };
-
-  const openCreatePostDialog = () => {
-    if (auth.user) {
-      setCreatePostDialogOpen(true);
-    } else {
-      router.push('/login');
-    }
-  };
-
-  const closeCreatePostDialog = () => {
-    setCreatePostDialogOpen(false);
-    setNewPost({ title: "", description: "", content: "", tags: [], codeTemplateLinks: [], codeTemplateIds: []});
-  };
-
-  const handleCreatePostChange = (field: string, value: string | string[] | number[]) => {
-    setNewPost((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleCreatePostSubmit = async () => {
@@ -157,13 +173,9 @@ const BlogPostsPage = () => {
       setOpenSnackbar(true);
     }
   };
-  
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false);
-  };
 
   return (
-    <Container sx={{ pt: 3, pb: 3 }}>
+    <Container sx={{ pt: 2, pb: 2 }}>
         <SearchBar
           auth={auth}
           search={search}
@@ -182,29 +194,30 @@ const BlogPostsPage = () => {
           onPostsPerPageChange={onPostsPerPageChange}
         />
 
-      <PostList posts={posts} onPostClick={handlePostClick}></PostList>
+      <PostList isLoading={isLoading} posts={posts} onPostClick={handlePostClick}/>
 
-      <Box sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}>
+      {posts.length > 0 &&
         <Pagination
-          count={Math.ceil(totalPosts / postsPerPage)}
-          page={page}
-          onChange={handlePageChange}
-          color="primary"
-        />
-      </Box>
+        sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}
+        count={Math.ceil(totalPosts / postsPerPage)}
+        page={page}
+        onChange={handlePageChange}
+        color="primary"
+      />
+      }
 
-      {createPostDialogOpen && <CreatePostDialog 
-        dialogType="create"
-        open={createPostDialogOpen}
-        post={newPost}
-        onClose={closeCreatePostDialog}
-        onChange={handleCreatePostChange}
-        onSubmit={handleCreatePostSubmit}
-        openSnackbar={openSnackbar}
-        onCloseSnackbar={handleCloseSnackbar}
-        message={snackbarMessage}
-      >
-      </CreatePostDialog>}
+      {createPostDialogOpen &&
+        <CreatePostDialog 
+          dialogType="create"
+          open={createPostDialogOpen}
+          post={newPost}
+          onClose={closeCreatePostDialog}
+          onChange={handleCreatePostChange}
+          onSubmit={handleCreatePostSubmit}
+        />
+      }
+      
+      <Alert message={snackbarMessage} openSnackbar={openSnackbar} setOpenSnackbar={setOpenSnackbar} />
     </Container>
   );
 };

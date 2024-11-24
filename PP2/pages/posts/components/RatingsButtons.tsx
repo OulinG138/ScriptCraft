@@ -45,6 +45,7 @@ interface Comment {
 }
 
 interface RatingsButtonsProps {
+    isVoting: boolean;
     userId: string | null;
     element: Post | Comment;
     targetType: "post" | "comment";
@@ -53,16 +54,15 @@ interface RatingsButtonsProps {
     openEditPostDialog: () => void;
 }
 
-const RatingsButtons = ({ userId, targetType, element, onReport, onVote, openEditPostDialog }: RatingsButtonsProps) => (
+const RatingsButtons = ({isVoting, userId, targetType, element, onReport, onVote, openEditPostDialog}: RatingsButtonsProps) => (
     <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", 
     }}>
-        {element.authorId === userId &&
+        { (targetType === 'post' && element.authorId === userId) &&
         <Button 
             className={`w-${targetType === 'post' ? '12' : '9'}`} 
             variant="text" 
-            size={targetType === "comment" ? "small" : "medium"}
-            onClick={() => {openEditPostDialog()}}
-            sx={{ minWidth: 'auto' }}
+            size="medium"
+            onClick={openEditPostDialog}
             >
             Edit
         </Button>
@@ -84,8 +84,8 @@ const RatingsButtons = ({ userId, targetType, element, onReport, onVote, openEdi
                 color: element.userRating?.value === 0 ? "#447cec" : "grey",
                 minWidth: 'auto', 
             }}
-            onClick={() => onVote(targetType, element, 0)}
-        >
+            onClick={() => !isVoting && onVote(targetType, element, 0)}
+            >
         ▼
         </Button>
 
@@ -99,7 +99,7 @@ const RatingsButtons = ({ userId, targetType, element, onReport, onVote, openEdi
                 color: element.userRating?.value === 1 ? "#447cec" : "grey",
                 minWidth: 'auto', 
             }}
-            onClick={() => onVote(targetType, element, 1)}
+            onClick={() => !isVoting && onVote(targetType, element, 1)}
         >▲</Button>
   </Box>
 );

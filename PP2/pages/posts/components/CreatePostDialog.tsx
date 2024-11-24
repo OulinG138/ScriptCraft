@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Snackbar, Alert } from "@mui/material";
+import { Box, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from "@mui/material";
 import API from "@/routes/API";
 
 interface CreatePostDialogProps {
@@ -16,9 +16,6 @@ interface CreatePostDialogProps {
   onClose: () => void;
   onChange: ((field: string, value: string | string[] | number[]) => void);
   onSubmit: () => void;
-  openSnackbar: boolean;
-  onCloseSnackbar: () => void;
-  message: string;
 }
 
 const CreatePostDialog = ({
@@ -28,9 +25,6 @@ const CreatePostDialog = ({
   onClose,
   onChange,
   onSubmit,
-  openSnackbar,
-  onCloseSnackbar,
-  message
 }: CreatePostDialogProps) => {
   const [currentTag, setCurrentTag] = useState("");
   const [currentLink, setCurrentLink] = useState("");
@@ -98,7 +92,6 @@ const CreatePostDialog = ({
   };
 
   return (
-    <>
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>{dialogType === 'create' ? 'Create Blog Post' : 'Edit Blog Post'}</DialogTitle>
 
@@ -183,20 +176,6 @@ const CreatePostDialog = ({
         </Button>
       </DialogActions>
     </Dialog>
-    <Snackbar 
-      open={openSnackbar} 
-      autoHideDuration={5000} 
-      onClose={onCloseSnackbar}
-    >
-      <Alert 
-        onClose={onCloseSnackbar} 
-        severity="info" 
-        sx={{ width: '100%' }}
-      >
-        {message}
-      </Alert>
-    </Snackbar>
-    </>
   );
 };
 

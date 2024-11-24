@@ -265,6 +265,14 @@ export default async function handler(req, res) {
       // Fetch results from the database based on the 'where' condition
       let results = await prisma.blogPost.findMany({
         where,
+        include: {
+          author: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          }
+        }
       });
 
       // Sort results based on the 'sortBy' parameter or createdAt date

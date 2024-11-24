@@ -34,7 +34,7 @@ const routers = {
     }
   },
   postComment: async (accessToken: string, postId: Number, payload: object) => 
-    authAxiosInstance.post(`/posts/${postId}/comments`, payload, getJWTHeader(accessToken)),  
+    authAxiosInstance.post(`/posts/${postId}/comments`, payload, getJWTHeader(accessToken)),   
   postRating: async (accessToken: string, payload: object) => 
     authAxiosInstance.post(`/ratings`, payload, getJWTHeader(accessToken)),  
   deleteRating: async(accessToken: string, ratingId: number) => 

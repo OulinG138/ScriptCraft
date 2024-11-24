@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { MenuItem, Select, InputLabel, FormControl, Container, Typography, Box, Chip, Pagination, TextField, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText, SelectChangeEvent } from "@mui/material";
+import { MenuItem, Select, InputLabel, FormControl, Container, Typography, Box, Chip, Pagination, TextField, Button, List, ListItem, ListItemText, SelectChangeEvent } from "@mui/material";
 import Link from "next/link";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
 import RatingsButtons from "./components/RatingsButtons"
 import CreatePostDialog from "./components/CreatePostDialog";
+import Alert from "./components/Alert";
+import ReportDialog from "./components/ReportDialog";
 
 interface Rating {
     id: number,
@@ -56,10 +58,12 @@ const PostDetailPage = () => {
     const [id, setId] = useState<number>(0);
     const [post, setPost] = useState<Post | null>(null);
 
+    const [isVoting, setIsVoting] = useState(false);
+
     const [comments, setComments] = useState<Comment[]>([]);
     const [page, setPage] = useState(1);
     const [commentsPerPage, setCommentsPerPage] = useState(5);
-    const [sortBy, setSortBy] = useState("ratings");
+    const [sortBy, setSortBy] = useState("date");
     const [totalPages, setTotalPages] = useState(1);
     const [newComment, setNewComment] = useState({content: "", parentCommentId: null});
     const [newReply, setNewReply] = useState({content: "", parentCommentId: 0});
@@ -86,11 +90,7 @@ const PostDetailPage = () => {
     const [openSnackbar, setOpenSnackbar] = useState(false);  
 
     const openEditPostDialog = () => {
-      if (auth.user) {
         setCreatePostDialogOpen(true);
-      } else {
-        router.push('/login');
-      }
     };
   
     const closeEditPostDialog = () => {
@@ -140,7 +140,7 @@ const PostDetailPage = () => {
       } else {
           console.warn("Query ID is not a string:", queryId);
       }
-  }, [router.query]);
+    }, [router.query]);
 
     const fetchPost = async () => {
       if (id) {
@@ -175,6 +175,10 @@ const PostDetailPage = () => {
     };
     
     const handleCommentSubmit = async () => {
+      if (!auth.user) {
+        setSnackbarMessage("Must login to comment");
+        setOpenSnackbar(true);
+      }
       if (!newComment.content.trim() || !post) return;
       try {
         if (!auth.accessToken) {
@@ -192,7 +196,7 @@ const PostDetailPage = () => {
       }
     };
 
-    const fetchReplies = async(commentId: number) => {
+    const fetchReplies = async (commentId: number) => {
       try {
         const response = await API.blogpost.getPaginatedReplies(auth.accessToken, commentId, 1, repliesPerPage);
         setShowReplies({parentCommentId: commentId, replies: response.data.replies});
@@ -210,9 +214,14 @@ const PostDetailPage = () => {
     }
 
     const handleReply = (commentId: number) => {
-      setNewReply(prevState => ({ ...prevState, parentCommentId: commentId }));
+      if (auth.user) {
+        setNewReply(prevState => ({ ...prevState, parentCommentId: commentId }));
+      } else {
+        setSnackbarMessage("Must login to reply to a comment");
+        setOpenSnackbar(true);
+      }
     };
-  
+
     const handleReplySubmit = async (parentCommentId: number) => {
       if (!newReply.content || !post) return;
       if (!auth?.accessToken) {
@@ -227,13 +236,10 @@ const PostDetailPage = () => {
           parentCommentId
         }));
         fetchComments(page);
+        fetchReplies(parentCommentId);
       } catch (error) {
         console.error("Error submitting reply", error);
       }
-    };
-    
-    const handleCloseSnackbar = () => {
-      setOpenSnackbar(false);
     };
 
     const handleCancelReply = () => {
@@ -247,16 +253,22 @@ const PostDetailPage = () => {
     useEffect(() => {
       fetchPost();
       fetchComments(page);
-    }, [id]);
+    }, [id, auth]);
   
     useEffect(() => {
       fetchComments(page);
     }, [post, page, sortBy, commentsPerPage]);
 
     const handleReport = (targetType: "post" | "comment", targetId: number) => {
-      setReportTarget({ type: targetType, id: targetId });
-      setOpenReportDialog(true);
+      if (!auth.user) {
+        setSnackbarMessage("Must login to report");
+        setOpenSnackbar(true);
+        return
+      }
+        setReportTarget({ type: targetType, id: targetId });
+        setOpenReportDialog(true);
     };
+    
   
     const handleSubmitReport = async () => {
       if (!auth.accessToken || !reportExplanation.trim() || !reportTarget) return;
@@ -274,30 +286,40 @@ const PostDetailPage = () => {
     };
 
     const handleVote = async (targetType: "post" | "comment", target: Post | Comment, value: number) => {
+      if (!auth.user) {
+        setSnackbarMessage("Must login to vote");
+        setOpenSnackbar(true);
+        return
+      }
       try {
         if (!auth.accessToken) {
           return
         }
-
         if (!target.userRating) {
+          setIsVoting(true);
           await API.blogpost.postRating(auth.accessToken, {targetType, targetId: target.id, value})
         } else if (target.userRating.value === value) {
+          setIsVoting(true);
           await API.blogpost.deleteRating(auth.accessToken, target.userRating.id)
           setPost(prevPost => {
             const { userRating, ...rest } = prevPost as Post;
             return rest;
           });
         } else if (target.userRating.value !== value) {
+          setIsVoting(true);
           await API.blogpost.deleteRating(auth.accessToken, target.userRating.id)
           await API.blogpost.postRating(auth.accessToken, {targetType, targetId: target.id, value});
         }
-        fetchPost();
-        fetchComments(page);
       } catch(error) {
         console.error("Error posting rating", error);
+      } finally {
+        fetchPost();
+        fetchComments(page);
+        fetchReplies(showReplies.parentCommentId);
+        setIsVoting(false);
       }
     };
-    
+
     const handleSortChange = (event: SelectChangeEvent<string>) => {
       setSortBy(event.target.value);
     };
@@ -329,7 +351,7 @@ const PostDetailPage = () => {
         console.error("Error fetching comments", error);
       }
     }
-  
+
     if (!post) return <div>Loading...</div>;
     
     return (
@@ -347,56 +369,87 @@ const PostDetailPage = () => {
             By {`${post.author.firstName} ${post.author.lastName} ${post.authorId.slice(-5)}`} | Posted: {new Date(post.createdAt).toLocaleDateString()}  | Last Updated: {new Date(post.updatedAt).toLocaleDateString()}
             </Typography>
 
-            <RatingsButtons userId={auth.user?.id || null} targetType='post' element={post} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} ></RatingsButtons>
+            <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='post' element={post} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog}></RatingsButtons>
     
             <Typography variant="body1"   sx={{mb: 3, whiteSpace: 'pre-wrap', wordWrap: 'break-word'}}>
               {post.content}
             </Typography>
 
-            <Box sx={{ mt: 3 }}>
-            <Typography variant="body1" sx={{ display: "inline", mr: 1 }}>
-              Tags:
-            </Typography>
-            <Box sx={{ display: "inline-flex", flexWrap: "wrap", gap: 1 }}>
-              {post.tags.map((tag) => (
-                <Chip key={tag.id} label={tag.name} />
-              ))}
-            </Box>
-            </Box>
+            {/* Tags */}
+            { post.tags.length > 0  && 
+              <Box sx={{ mt: 3 }}>
+              <Typography variant="body1" sx={{ display: "inline", mr: 1, fontWeight: '500' }}>
+                Tags:
+              </Typography>
+              <Box sx={{ display: "inline-flex", flexWrap: "wrap", gap: 1 }}>
+                {post.tags.map((tag) => (
+                  <Chip key={tag.id} label={tag.name} />
+                ))}
+              </Box>
+              </Box>
+            }
 
             {/* Code Templates */}
-            <Box sx={{ mt: 3 }}>
-              {post.codeTemplates.length > 0 && (
-                <>
-                  <Typography variant="body1" sx={{ mb: 1 }}>
-                    Code Templates:
-                  </Typography>
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                    {editPost.codeTemplateLinks.map((link) => (
-                      <Link href={link} passHref>
-                        <Typography
-                          variant="body2"
-                          sx={{ color: "primary.main", textDecoration: "underline" }}
-                        >
-                          {link}
-                        </Typography>
-                      </Link>
-                    ))}
-                  </Box>
-                </>
-              )}
-            </Box>
+            { post.codeTemplates.length > 0 &&
+              <Box sx={{ mt: 2 }}>
+                {post.codeTemplates.length > 0 && (
+                  <>
+                    <Typography variant="body1" sx={{ mb: 1, fontWeight: '500'}}>
+                      Code Templates:
+                    </Typography>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      {editPost.codeTemplateLinks.map((link) => (
+                        <Link href={link} passHref>
+                          <Typography
+                            variant="body2"
+                            sx={{ color: "primary.main", textDecoration: "underline" }}
+                          >
+                            {link}
+                          </Typography>
+                        </Link>
+                      ))}
+                    </Box>
+                  </>
+                )}
+              </Box>
+            }
 
+          {/* Comments */}
+          <Box sx={{ mt: 3 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>
               Comments:
             </Typography>
 
-            {/* Comment Box*/}
-            <Box sx={{ mt: 3 }}>
-              <TextField
+            <FormControl sx={{ marginRight: 2 }}>
+              <InputLabel>Sort By</InputLabel>
+              <Select
+                value={sortBy}
+                onChange={handleSortChange}
+                label="Sort By"
+                size="small"
+              >
+                <MenuItem value="date">Date</MenuItem>
+                <MenuItem value="ratings">Ratings</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ marginRight: 2, width: '150px' }}>
+              <InputLabel>Posts Per Page</InputLabel>
+              <Select
+                value={commentsPerPage}
+                onChange={onCommentsPerPageChange}
+                label="Posts Per Page"
+                size="small"
+              >
+                <MenuItem value={5}>5</MenuItem>
+                <MenuItem value={10}>10</MenuItem>
+                <MenuItem value={20}>20</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Box sx={{ display: 'flex', mt: 3, gap: 2}}>
+            <TextField
                 fullWidth
-                multiline
-                rows={4}
                 value={newComment.content}
                 onChange={(e) => setNewComment(prevState => ({
                   ...prevState,
@@ -404,162 +457,136 @@ const PostDetailPage = () => {
                 }))}
                 placeholder="Write your comment..."
                 variant="outlined"
-                sx={{ mb: 2 }}
               />
               <Button
                 variant="contained"
                 color="primary"
                 onClick={handleCommentSubmit}
                 disabled={!newComment.content.trim()}
-              >
+                sx={{ height: 'auto'}}
+                >
                 Comment
               </Button>
             </Box>
 
-          {/* Display Comments */}
-          <Box sx={{ mt: 3 }}>
-          <FormControl sx={{ marginRight: 2 }}>
-          <InputLabel>Sort By</InputLabel>
-          <Select
-            value={sortBy}
-            onChange={handleSortChange}
-            label="Sort By"
-            size="small"
-          >
-            <MenuItem value="date">Date</MenuItem>
-            <MenuItem value="ratings">Ratings</MenuItem>
-          </Select>
-        </FormControl>
+          {comments.length > 0 ? (
+            <List className='w-full flex flex-col'>
+              {comments.map((comment) => (
+              <ListItem
+                key={comment.id}
+                sx={{
+                  borderTop: comment.id === comments[0].id ? 'none' : '1px solid #e0e0e0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                }}
+              >
+                {/* Content */}
+                <ListItemText key={comment.id} primary={comment.content} />
 
-        <FormControl sx={{ marginRight: 2, width: '150px' }}>
-        <InputLabel>Posts Per Page</InputLabel>
-        <Select
-          value={commentsPerPage}
-          onChange={onCommentsPerPageChange}
-          label="Posts Per Page"
-          size="small"
-        >
-          <MenuItem value={5}>5</MenuItem>
-          <MenuItem value={10}>10</MenuItem>
-          <MenuItem value={20}>20</MenuItem>
-        </Select>
-        </FormControl>
+                {/* Metadata */}
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                  By {`${comment.author.firstName} ${comment.author.lastName} ${comment.authorId.slice(-5)}`} | Posted: {new Date(comment.createdAt).toLocaleDateString()}  | Last Updated: {new Date(comment.updatedAt).toLocaleDateString()}
+                </Typography>
 
-            {comments.length > 0 ? (
-              <List>
-                {comments.map((comment) => (
-                  <ListItem key={comment.id} className="flex -space-y-2 flex-col items-start w-full"     sx={{
-                    borderTop: comment.id === comments[0].id ? 'none' : '1px solid #e0e0e0'
-                }}>
-                  
-                  {/* Comment Content */}
-                  <Box className="box w-full">
-                      <ListItemText
-                        primary={comment.content}
-                      />
-                      <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                      By {`${comment.author.firstName} ${comment.author.lastName} ${comment.authorId.slice(-5)}`} | Posted: {new Date(comment.createdAt).toLocaleDateString()}  | Last Updated: {new Date(comment.updatedAt).toLocaleDateString()}
-                      </Typography>
-                  </Box>
+                {/* Buttons */}
+                <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                  <Button
+                    color="primary"
+                    size="small"
+                    className={`w-8'}`} 
+                    sx={{ minWidth: 'auto' }}
+                    onClick={() => handleReply(comment.id)}
+                  >Reply</Button>
 
-                  {/* Reply Buttons */}
-                  <Box className="box w-full" sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+                  { comment.repliesCount > 0 &&
+                  (showReplies.parentCommentId !== comment.id ? (
+                  <>
+                    <Button
+                    color="primary"
+                    size="small"
+                    onClick={() => fetchReplies(comment.id)}
+                    >Show Replies</Button></>):
+                    (<>
                     <Button
                       color="primary"
                       size="small"
-                      className={`w-8'}`} 
-                      sx={{ minWidth: 'auto' }}
-                      onClick={() => handleReply(comment.id)}
-                    >Reply</Button>
+                      onClick={handleHideReplies}
+                    >Hide Replies</Button>
+                    </>))
+                  } 
+                  <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='comment' element={comment} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog}></RatingsButtons>
+                </Box>
 
-                    { comment.repliesCount > 0 &&
-                    (showReplies.parentCommentId !== comment.id ? (
-                      <>
-                      <Button
+                {/* Reply Box */}
+                {newReply.parentCommentId === comment.id && (
+                <Container style={{ marginTop: '5px' }}>
+                  <TextField
+                    label="Write your reply"
+                    rows={4}
+                    value={newReply.content}
+                    onChange={(e) => setNewReply(prevState => ({ ...prevState, content: e.target.value }))}
+                    fullWidth
+                  />
+                  <Button
+                    color="primary"
+                    onClick={async () => {
+                      await handleReplySubmit(comment.id);
+                    }}
+                  >
+                    Submit
+                  </Button>
+                  <Button
+                    color="primary"
+                    onClick={handleCancelReply}
+                  >
+                    Cancel
+                  </Button>
+                </Container>
+                )}
+
+                {/* Replies */}
+                {showReplies.parentCommentId === comment.id && (
+                  showReplies.replies.length > 0 ? (
+                    <Container style={{ marginTop: '5px' }}>
+                      {showReplies.replies.map((reply) => (
+                        <ListItem key={reply.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
+                          <Box className="box w-full">
+                              <ListItemText
+                                primary={reply.content}
+                              />
+                              <Typography variant="body2" color="textSecondary">
+                              By {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`} | Posted: {new Date(reply.createdAt).toLocaleDateString()}  | Last Updated: {new Date(reply.updatedAt).toLocaleDateString()}
+                              </Typography>
+                              <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='comment' element={reply} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} />
+                          </Box>
+                        </ListItem>
+                      ))}
+                      {repliesPage < totalRepliesPages &&
+                      (<Button
                       color="primary"
                       size="small"
-                      onClick={() => fetchReplies(comment.id)}
-                      >Show Replies</Button></>):
-                      (<>
-                      <Button
-                        color="primary"
-                        size="small"
-                        onClick={handleHideReplies}
-                      >Hide Replies</Button>
-                      </>))
-                    } 
-                    <RatingsButtons userId={auth.user?.id || null} targetType='comment' element={comment} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} ></RatingsButtons>
-                  </Box>
+                      onClick={() => handleMoreReplies()}
+                      >
+                        More Replies
+                      </Button>)}
+                    </Container>
+                  ) : (
+                    <Typography variant="body2" color="textSecondary" style={{ marginTop: '5px' }}>
+                      No replies
+                    </Typography>
+                  )
+                )}
 
-                  {/* Reply Box */}
-                  {newReply.parentCommentId === comment.id && (
-                  <Container style={{ marginTop: '5px' }}>
-                    <TextField
-                      label="Write your reply"
-                      multiline
-                      rows={4}
-                      value={newReply.content}
-                      onChange={(e) => setNewReply(prevState => ({ ...prevState, content: e.target.value }))}
-                      fullWidth
-                    />
-                    <Button
-                      color="primary"
-                      onClick={async () => {
-                        await handleReplySubmit(comment.id);
-                      }}
-                    >
-                      Submit
-                    </Button>
-                    <Button
-                      color="primary"
-                      onClick={handleCancelReply}
-                    >
-                      Cancel
-                    </Button>
-                  </Container>
-                  )}
-
-                  {/* Replies */}
-                  {showReplies.parentCommentId === comment.id && (
-                    showReplies.replies.length > 0 ? (
-                      <Container style={{ marginTop: '5px' }}>
-                        {showReplies.replies.map((reply) => (
-                          <ListItem key={reply.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
-                            <Box className="box w-full">
-                                <ListItemText
-                                  primary={reply.content}
-                                />
-                                <Typography variant="body2" color="textSecondary">
-                                By {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`} | Posted: {new Date(reply.createdAt).toLocaleDateString()}  | Last Updated: {new Date(reply.updatedAt).toLocaleDateString()}
-                                </Typography>
-                                <RatingsButtons userId={auth.user?.id || null} targetType='comment' element={comment} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog}></RatingsButtons>
-                            </Box>
-                          </ListItem>
-                        ))}
-                        {repliesPage < totalRepliesPages &&
-                        (<Button
-                        color="primary"
-                        size="small"
-                        onClick={() => handleMoreReplies()}
-                        >
-                          More Replies
-                        </Button>)}
-                      </Container>
-                    ) : (
-                      <Typography variant="body2" color="textSecondary" style={{ marginTop: '5px' }}>
-                        No replies
-                      </Typography>
-                    )
-                  )}
-                </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography variant="body1" textAlign="center" mt={3}>
-                No comments to display
-              </Typography>
-            )}
-          </Box>
+              </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography variant="body1" textAlign="center" mt={3}>
+              No comments to display
+            </Typography>
+          )}
+        </Box>
 
           {/* Comment Pagination */}
           {comments.length > 0 && (
@@ -578,30 +605,15 @@ const PostDetailPage = () => {
         </div>
         </Box>
 
-      <Dialog open={openReportDialog} onClose={() => setOpenReportDialog(false)}
-          maxWidth="sm"
-          fullWidth>
-        <DialogTitle>Report</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Explanation"
-            value={reportExplanation}
-            onChange={(e) => setReportExplanation(e.target.value)}
-            fullWidth
-            multiline
-            rows={4}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenReportDialog(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleSubmitReport} color="primary">
-            Submit Report
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ReportDialog
+        openReportDialog={openReportDialog}
+        setOpenReportDialog={setOpenReportDialog}
+        setReportExplanation={setReportExplanation}
+        handleSubmitReport={handleSubmitReport}
+        reportExplanation={reportExplanation}
+      />
 
+      {/* Edit Post Dialog */}
       {createPostDialogOpen && <CreatePostDialog 
         dialogType="edit"
         open={createPostDialogOpen}
@@ -609,11 +621,11 @@ const PostDetailPage = () => {
         onClose={closeEditPostDialog}
         onChange={handleEditPostChange}
         onSubmit={handleEditPostSubmit}
-        openSnackbar={openSnackbar}
-        onCloseSnackbar={handleCloseSnackbar}
-        message={snackbarMessage}
-      >
-      </CreatePostDialog>}
+      />}
+
+      {/* Snackbar Alert */}
+      <Alert message={snackbarMessage} openSnackbar={openSnackbar} setOpenSnackbar={setOpenSnackbar} />
+
       </Container>
   )
 };

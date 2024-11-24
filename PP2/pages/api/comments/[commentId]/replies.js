@@ -95,8 +95,20 @@ export default async function handler(req, res) {
               lastName: true,
             },
           },
+          ratings: req.user?.sub ? {
+            where: {
+              userId: req.user?.sub,
+            },
+          } : false,
         }
       });
+
+      results = results.map(comment => ({
+        ...comment,
+        ratings: undefined,
+        userRating: comment.ratings?.length ? comment.ratings[0] : undefined,
+      }));
+
 
       results = results.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
