@@ -4,9 +4,7 @@ import type { AppProps } from "next/app";
 import { useRouter } from "next/router";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthProvider";
-import { ThemeProvider, CssBaseline } from "@mui/material";
 import Navbar from "@/components/Navbar";
-import theme from "./theme";
 
 export default function App({ Component, pageProps }: AppProps) {
   const noNavbarRoutes = ["/login", "/signup"];
@@ -14,13 +12,10 @@ export default function App({ Component, pageProps }: AppProps) {
   const shouldHideNavbar = noNavbarRoutes.includes(router.pathname);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <Toaster position="top-center" />
-        {!shouldHideNavbar && <Navbar />}
-        <Component {...pageProps} />
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <Toaster position="top-center" />
+      {!shouldHideNavbar && <Navbar />}
+      <Component {...pageProps} />
+    </AuthProvider>
   );
 }
