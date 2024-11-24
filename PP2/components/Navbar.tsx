@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Button,
@@ -6,7 +6,14 @@ import {
   CircularProgress,
   Menu,
   MenuItem,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import useAuth from "@/hooks/useAuth";
 import useLogout from "@/hooks/useLogout";
 import { useRouter } from "next/router";
@@ -21,12 +28,12 @@ const NavbarContent = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loadingAvatar, setLoadingAvatar] = useState(true);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const navLinks = [
-    { text: "placeholder", href: "/" },
-    { text: "placeholder", href: "/" },
-    { text: "placeholder", href: "/" },
-    { text: "placeholder", href: "/" },
+    { text: "About", href: "/about" },
+    { text: "Contact", href: "/contact" },
+    { text: "Help", href: "/help" },
     ...(auth.user?.isAdmin
       ? [{ text: "Reports", href: "/admin/reports/comments" }]
       : []),
@@ -49,11 +56,6 @@ const NavbarContent = () => {
     fetchAvatar();
   }, [isLoggedIn, auth.user?.avatarId]);
 
-  const handleLogoutClick = () => {
-    logout();
-    handleMenuClose();
-  };
-
   const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -62,62 +64,32 @@ const NavbarContent = () => {
     setAnchorEl(null);
   };
 
+  const toggleDrawer = (open: boolean) => () => {
+    setDrawerOpen(open);
+  };
+
   return (
     <div className="w-full flex flex-col lg:flex-row lg:items-center gap-4">
+      {/* Top row with logo and hamburger */}
       <div className="flex justify-between items-center">
         <Link href="/" className="text-xl font-semibold text-gray-800">
           Scriptorium
         </Link>
 
         <div className="lg:hidden">
-          {isLoggedIn ? (
-            <>
-              {loadingAvatar ? (
-                <CircularProgress size={24} />
-              ) : (
-                <Avatar
-                  alt={auth.user?.lastName || "User"}
-                  src={avatarUrl || ""}
-                  onClick={handleAvatarClick}
-                  sx={{ cursor: "pointer", width: 40, height: 40 }}
-                />
-              )}
-            </>
-          ) : (
-            <div className="flex gap-2">
-              <Link href="/login">
-                <Button
-                  color="primary"
-                  size="small"
-                  sx={{
-                    border: "1px solid",
-                    color: "primary.main",
-                    borderColor: "primary.main",
-                    backgroundColor: "white",
-                    "&:hover": {
-                      backgroundColor: "primary.light",
-                    },
-                  }}
-                >
-                  Login
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button variant="contained" color="primary" size="small">
-                  Signup
-                </Button>
-              </Link>
-            </div>
-          )}
+          <IconButton onClick={toggleDrawer(true)}>
+            <MenuIcon />
+          </IconButton>
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-2 lg:gap-4">
+      {/* Full navigation for larger screens */}
+      <div className="hidden lg:flex lg:flex-row gap-2 lg:gap-4">
         {navLinks.map((link, index) => (
           <Link
             key={index}
             href={link.href}
-            className="text-gray-700 hover:text-blue-600 py-2 lg:py-0 px-3 border-b lg:border-b-0 last:border-b-0"
+            className="text-gray-700 hover:text-blue-600 py-2 px-3 border-b lg:border-b-0"
           >
             {link.text}
           </Link>
@@ -165,13 +137,93 @@ const NavbarContent = () => {
         )}
       </div>
 
+      {/* Hamburger Drawer for small screens */}
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={toggleDrawer(false)}
+        PaperProps={{
+          sx: {
+            width: 280, // Made sidebar wider
+          },
+        }}
+      >
+        {/* User profile section at the top of sidebar */}
+        {isLoggedIn && (
+          <div className="p-4 bg-gray-50 flex flex-col items-center space-y-2">
+            {loadingAvatar ? (
+              <CircularProgress size={24} />
+            ) : (
+              <Avatar
+                alt={auth.user?.lastName || "User"}
+                src={avatarUrl || ""}
+                sx={{ width: 64, height: 64 }}
+              />
+            )}
+            <Typography
+              variant="subtitle1"
+              className="font-medium text-gray-800"
+            >
+              {`${auth.user?.firstName} ${auth.user?.lastName}`}
+            </Typography>
+          </div>
+        )}
+
+        <List>
+          {navLinks.map((link, index) => (
+            <ListItem
+              button
+              key={index}
+              component={Link}
+              href={link.href}
+              onClick={toggleDrawer(false)}
+            >
+              <ListItemText primary={link.text} />
+            </ListItem>
+          ))}
+          {isLoggedIn ? (
+            <>
+              <ListItem button component={Link} href="/profile">
+                <ListItemText primary="Profile" />
+              </ListItem>
+              <ListItem
+                button
+                onClick={() => {
+                  logout();
+                  toggleDrawer(false)();
+                }}
+              >
+                <ListItemText primary="Log out" />
+              </ListItem>
+            </>
+          ) : (
+            <>
+              <ListItem button component={Link} href="/login">
+                <ListItemText primary="Login" />
+              </ListItem>
+              <ListItem button component={Link} href="/signup">
+                <ListItemText primary="Signup" />
+              </ListItem>
+            </>
+          )}
+        </List>
+      </Drawer>
+
+      {/* Menu for Avatar options */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
         <MenuItem onClick={() => router.push("/profile")}>Profile</MenuItem>
-        <MenuItem onClick={handleLogoutClick}>Log out</MenuItem>
+        <MenuItem
+          onClick={() => {
+            logout();
+            handleMenuClose();
+          }}
+        >
+          Log out
+        </MenuItem>
       </Menu>
     </div>
   );
