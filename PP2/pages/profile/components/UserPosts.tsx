@@ -4,10 +4,10 @@ import {
 } from "@mui/material";
 
 import { useRouter } from "next/router";
-import CreatePostDialog from "../posts/components/CreatePostDialog";
-import SearchBar from "../posts/components/SearchBar";
-import PostList from "../posts/components/PostList";
-import Alert from "../posts/components/Alert";
+import CreatePostDialog from "../../posts/components/CreatePostDialog";
+import SearchBar from "../../posts/components/SearchBar";
+import PostList from "../../posts/components/PostList";
+import Alert from "../../posts/components/Alert";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
 
@@ -25,7 +25,7 @@ interface Post {
   author: {firstName: string, lastName: string}
 }
 
-const BlogPostsPage = () => {
+const UserPosts = () => {
   // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
@@ -226,4 +226,4 @@ const BlogPostsPage = () => {
   );
 };
 
-export default BlogPostsPage;
+export default UserPosts;

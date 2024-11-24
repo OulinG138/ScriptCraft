@@ -31,6 +31,26 @@ const routers = {
       return authAxiosInstance.get(`/code/search?${queryString}`);
     }
   },
+  getUserTemplates: async (
+    accessToken: string | undefined,
+    search: string,
+    tags: string[],
+    page: number,
+    limit: number
+  ) => {
+    const queryParams: Record<string, string> = {
+      search,
+      searchTags: tags.join(", "),
+      page: page.toString(),
+      limit: limit.toString(),
+    };
+    const queryString = new URLSearchParams(queryParams).toString();
+    if (accessToken) {
+      return authAxiosInstance.get(`/user/templates?${queryString}`, getJWTHeader(accessToken));
+    } else {
+      return authAxiosInstance.get(`/user/templates?${queryString}`);
+    }
+  },
 };
 
 export default routers;

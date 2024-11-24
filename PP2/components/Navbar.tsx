@@ -34,7 +34,6 @@ const NavbarContent = () => {
   const navLinks = [
     { text: "Blog Posts", href: "/posts" },
     { text: "Code Templates", href: "/code-templates" },
-    { text: "My Posts", href: "/user/posts" },
     { text: "About", href: "/about" },
     { text: "Contact", href: "/contact" },
     { text: "Help", href: "/help" },

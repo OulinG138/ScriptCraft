@@ -1,9 +1,10 @@
+
 import { verifyLoggedIn } from "@/utils/auth";
 import prisma from "@/utils/db";
 
 /**
  * @swagger
- * /api/code/search:
+ * /api/user/templates:
  *   get:
  *     summary: Retrieve a paginated list of posts
  *     description: This endpoint allows a user or visitor to retreive a paginated list of posts.
@@ -76,6 +77,7 @@ import prisma from "@/utils/db";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
+    verifyLoggedIn(req)
     try {
       const {
         search,
@@ -87,7 +89,7 @@ export default async function handler(req, res) {
       const limitNum = parseInt(limit, 10);
       const skip = (pageNum - 1) * limitNum;
 
-      let where = {};
+      let where = { authorId: req.user.sub};
       // Add filters based on the search query if it exists
       if (search) {
         where.OR = [
