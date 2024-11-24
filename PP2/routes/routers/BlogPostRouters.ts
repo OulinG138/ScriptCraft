@@ -51,6 +51,10 @@ const routers = {
     const queryString = new URLSearchParams(queryParams).toString();
     return authAxiosInstance.get(`/user/posts?${queryString}`, getJWTHeader(accessToken));
   },
+  deleteBlogPost: async (accessToken: string, postId: number) =>
+    authAxiosInstance.delete(`/posts/${postId}`,getJWTHeader(accessToken)),
+  deleteComment: async (accessToken: string, commentId: number) =>
+    authAxiosInstance.delete(`/comment/${commentId}`,getJWTHeader(accessToken)),
   postComment: async (accessToken: string, postId: Number, payload: object) => 
     authAxiosInstance.post(`/posts/${postId}/comments`, payload, getJWTHeader(accessToken)),   
   postRating: async (accessToken: string, payload: object) => 

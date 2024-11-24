@@ -37,6 +37,12 @@ export default function Login() {
     event.preventDefault();
   };
 
+  React.useEffect(() => {
+    if (!_.isEmpty(auth?.accessToken) && !_.isEmpty(auth?.user)) {
+      router.replace("/");
+    }
+  }, [auth]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);

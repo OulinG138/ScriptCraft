@@ -178,7 +178,7 @@ const BlogPostsPage = () => {
 
   return (
     <Container sx={{ pt: 2, pb: 2 }}>
-        <Typography variant="h4" className="pb-5">Blog Posts</Typography>
+        <Typography variant="h4" className="pb-5">My Blog Posts</Typography>
 
         <SearchBar
           auth={auth}

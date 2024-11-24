@@ -288,7 +288,7 @@ export default async function handler(req, res) {
     });
   } else if (req.method === "DELETE") {
     verifyToken(req, res, async () => {
-      const userId = req.userId;
+      const userId = req.user.sub;
       const { postId } = req.query;
 
       try {

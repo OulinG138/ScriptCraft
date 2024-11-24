@@ -10,3 +10,5 @@ prisma/*
 !prisma/schema.prisma
 !prisma/seed.js
 !prisma/seed.ts
+
+*.code-workspace

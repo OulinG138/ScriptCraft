@@ -8,6 +8,7 @@ import RatingsButtons from "./components/RatingsButtons"
 import CreatePostDialog from "./components/CreatePostDialog";
 import Alert from "./components/Alert";
 import ReportDialog from "./components/ReportDialog";
+import DeleteDialog from "./components/DeleteDialog";
 
 interface Rating {
     id: number,
@@ -145,6 +146,7 @@ const PostDetailPage = () => {
     const fetchPost = async () => {
       if (id) {
         try {
+          setIsLoading(true);
           const response = await API.blogpost.getBlogPost(auth.accessToken, Number(id));
           const post = response.data;
           setPost(post);          
@@ -158,6 +160,8 @@ const PostDetailPage = () => {
           });
         } catch (error) {
           console.error("Error fetching post", error);
+        } finally {
+          setIsLoading(false);
         }
       }
     };
@@ -337,6 +341,16 @@ const PostDetailPage = () => {
       setEditPost((prev) => ({ ...prev, [field]: value }));
     };
 
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<Post | Comment | null>(null);
+    const [deleteTargetType, setDeleteTargetType] = useState<'post' | 'comment'>('post');
+
+    const handleDelete = async(targetType: 'post' | 'comment', target: Post | Comment) => {
+      setOpenDeleteDialog(true);
+      setDeleteTarget(target);
+      setDeleteTargetType(targetType);
+    }
+
     const handleMoreReplies = async() => {
       try {
         const parentCommentId = showReplies.parentCommentId;
@@ -352,8 +366,12 @@ const PostDetailPage = () => {
       }
     }
 
-    if (!post) return <div>Loading...</div>;
-    
+    const [isLoading, setIsLoading] = useState(true);
+
+    console.log(id, isLoading, post);
+    if (!isLoading && !post) router.push('/404');
+    else if (!post) return <Typography variant="h5"sx={{ textAlign: 'center' }}> Loading... </Typography>;
+    else 
     return (
       <Container sx={{ pt: 3, pb: 3 }}>
         <Box sx={{ padding: 3, border: "1px solid #ddd", borderRadius: 2 }}>
@@ -369,7 +387,7 @@ const PostDetailPage = () => {
             By {`${post.author.firstName} ${post.author.lastName} ${post.authorId.slice(-5)}`} | Posted: {new Date(post.createdAt).toLocaleDateString()}  | Last Updated: {new Date(post.updatedAt).toLocaleDateString()}
             </Typography>
 
-            <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='post' element={post} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog}></RatingsButtons>
+            <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='post' element={post} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} onDelete={handleDelete} ></RatingsButtons>
     
             <Typography variant="body1"   sx={{mb: 3, whiteSpace: 'pre-wrap', wordWrap: 'break-word'}}>
               {post.content}
@@ -515,7 +533,7 @@ const PostDetailPage = () => {
                     >Hide Replies</Button>
                     </>))
                   } 
-                  <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='comment' element={comment} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog}></RatingsButtons>
+                  <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='comment' element={comment} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} onDelete={handleDelete}></RatingsButtons>
                 </Box>
 
                 {/* Reply Box */}
@@ -558,7 +576,7 @@ const PostDetailPage = () => {
                               <Typography variant="body2" color="textSecondary">
                               By {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`} | Posted: {new Date(reply.createdAt).toLocaleDateString()}  | Last Updated: {new Date(reply.updatedAt).toLocaleDateString()}
                               </Typography>
-                              <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='comment' element={reply} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} />
+                              <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='comment' element={reply} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog}onDelete={handleDelete} />
                           </Box>
                         </ListItem>
                       ))}
@@ -612,6 +630,15 @@ const PostDetailPage = () => {
         handleSubmitReport={handleSubmitReport}
         reportExplanation={reportExplanation}
       />
+
+      {/* Edit Post Dialog */}
+      {openDeleteDialog && <DeleteDialog 
+        auth={auth}
+        openDeleteDialog={openDeleteDialog}
+        setOpenDeleteDialog={setOpenDeleteDialog}
+        targetType={deleteTargetType}
+        target={deleteTarget as Post | Comment}
+      />}
 
       {/* Edit Post Dialog */}
       {createPostDialogOpen && <CreatePostDialog 
