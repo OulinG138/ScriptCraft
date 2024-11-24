@@ -54,6 +54,14 @@ else
   echo "docker is already installed."
 fi
 
+if ! command -v docker.io &>/dev/null; then
+  echo "docker engine service is not installed. Installing now..."
+  sudo apt-get install docker.io
+  echo "docker engine service installed successfully."
+else
+  echo "docker engine service is already installed."
+fi
+
 create_docker_images
 
 # Check and ensure the necessary programming languages are installed
