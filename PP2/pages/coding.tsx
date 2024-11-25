@@ -48,11 +48,9 @@ export default function Coding() {
     setIsExecuting(true)
     let res = await API.code.execute(reqBody)
     var out = null
-    if (res.status === 203) {
-      out = res.data.error
-    } else  {
-      out = res.data.stdout
-    }
+
+    out = res.data.stdout
+
     setStdout(out.replace(
       /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''))
     if (res.status === 201) {

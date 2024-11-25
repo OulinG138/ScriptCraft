@@ -160,7 +160,7 @@ export default async function handler(req, res) {
 
         }   catch (error) {
             deleteTempFiles(path, extensionLookup[language], res)
-            res.status(203).json({error: error.stdout})
+            res.status(401).json({error: error.stdout})
         }
     }
   }

@@ -30,7 +30,7 @@ export default function Coding() {
   const [isSaving, setIsSaving] = useState(false)
   const [isOwner, setIsOwner] = useState(true)
 
-  const [parentId, setParentId] = useState("-1")
+  const [parentId, setParentId] = useState("")
   const [author, setAuthor] = useState("")
   const [created, setCreated] = useState("")
   const [updated, setUpdated] = useState("")
@@ -40,7 +40,6 @@ export default function Coding() {
   const [editingToggle, setEditing] = useState(false)
   const [detailToggle, setDetail] = useState(true)
   const [inputToggle, setInputting] = useState(true)
-  const [dropdownToggle, setDropdown] = useState(false)
 
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState("");
@@ -63,11 +62,9 @@ export default function Coding() {
     setIsExecuting(true)
     let res = await API.code.execute(reqBody)
     var out = null
-    if (res.status === 203) {
-      out = res.data.error
-    } else  {
-      out = res.data.stdout
-    }
+    
+    out = res.data.stdout
+    
     setStdout(out.replace(
       /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''))
     if (res.status === 201) {
@@ -133,10 +130,6 @@ export default function Coding() {
   const toggleInputting = () =>    {
     setInputting(!inputToggle);
   }
-
-  const toggleDropdown = () => {
-    setDropdown(!dropdownToggle)
-  };
 
   const addTag = () =>  {
       var exists = tags.indexOf(newTag) > -1
