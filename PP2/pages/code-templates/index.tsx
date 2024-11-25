@@ -67,7 +67,7 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
           page,
           postsPerPage
         );
-        setPosts(response.data.posts);
+        setPosts(response.data.templates);
         setTotalPosts(response.data.totalPosts);
       } else {
         response = await API.code.getPaginatedTemplates(
@@ -77,7 +77,7 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
           page,
           postsPerPage
         );
-        setPosts(response.data.posts);
+        setPosts(response.data.templates);
         setTotalPosts(response.data.totalPosts);
       }
     } catch (error) {
@@ -191,23 +191,25 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
       </Box>
 
       <TemplatesSearchBar
-          auth={auth}
-          search={search}
-          setSearch={setSearch}
-          onKeyDown={handleSearchKeyDown}
-          onTagsChange={setSearchTags}
-          searchTags={searchTags}
-          onClick={handleSearchClick}
-          onTagsKeyDown={handleTagsKeyDown}
-          sortBy={sortBy}
-          onSortChange={handleSortChange}
-          tags={tags}
-          onTagDelete={handleTagDelete}
-          postsPerPage={postsPerPage}
-          onPostsPerPageChange={onPostsPerPageChange}
-        />
+        auth={auth}
+        search={search}
+        setSearch={setSearch}
+        onKeyDown={handleSearchKeyDown}
+        onTagsChange={setSearchTags}
+        searchTags={searchTags}
+        onClick={handleSearchClick}
+        onTagsKeyDown={handleTagsKeyDown}
+        sortBy={sortBy}
+        onSortChange={handleSortChange}
+        tags={tags}
+        onTagDelete={handleTagDelete}
+        postsPerPage={postsPerPage}
+        onPostsPerPageChange={onPostsPerPageChange}
+      />
 
-      <TemplateList isLoading={isLoading} posts={posts} onPostClick={handlePostClick}/>
+      <Box className="mt-5">
+        <TemplateList isLoading={isLoading} posts={posts} onPostClick={handlePostClick}/>
+      </Box>
 
       {posts.length > 0 &&
         <Pagination

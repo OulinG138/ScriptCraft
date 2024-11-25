@@ -507,10 +507,18 @@ const PostDetailPage = () => {
               }}
             >
               {/* Content */}
+              <Box className="w-full flex justify-between items-center">
               <ListItemText key={comment.id} primary={comment.content} />
+                {comment.isHidden && (
+                  <Box className="text-red-500 flex items-center">
+                    <FlagIcon className="text-2xl pr-2"/>
+                    <Typography variant="body1">HIDDEN</Typography>
+                  </Box>
+                )}
+              </Box>
 
               {/* Metadata */}
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+              <Typography variant="body2" color="textSecondary">
                 By {`${comment.author.firstName} ${comment.author.lastName} ${comment.authorId.slice(-5)}`} | Posted: {new Date(comment.createdAt).toLocaleDateString()}  | Last Updated: {new Date(comment.updatedAt).toLocaleDateString()}
               </Typography>
 
@@ -577,9 +585,15 @@ const PostDetailPage = () => {
                     {showReplies.replies.map((reply) => (
                       <ListItem key={reply.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
                         <Box className="box w-full">
-                            <ListItemText
-                              primary={reply.content}
-                            />
+                        <Box className="w-full flex justify-between items-center">
+                          <ListItemText key={reply.id} primary={reply.content} />
+                            {reply.isHidden && (
+                              <Box className="text-red-500 flex items-center">
+                                <FlagIcon className="text-2xl pr-2"/>
+                                <Typography variant="body1">HIDDEN</Typography>
+                              </Box>
+                            )}
+                          </Box>
                             <Typography variant="body2" color="textSecondary">
                             By {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`} | Posted: {new Date(reply.createdAt).toLocaleDateString()}  | Last Updated: {new Date(reply.updatedAt).toLocaleDateString()}
                             </Typography>

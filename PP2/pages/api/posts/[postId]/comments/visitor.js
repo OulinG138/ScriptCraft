@@ -124,7 +124,7 @@ export default async function handler(req, res) {
       const skip = (pageNum - 1) * limitNum;
 
       let results = await prisma.comment.findMany({
-        where: { isHidden: false },
+        where: { parentCommentId: null, isHidden: false },
         include: {
           author: {
             select: {

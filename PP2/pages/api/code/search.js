@@ -1,4 +1,3 @@
-import { verifyToken } from "@/utils/auth";
 import prisma from "@/utils/db";
 
 /**
@@ -76,34 +75,26 @@ import prisma from "@/utils/db";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    verifyToken(req, res, async () => {
-      try {
-        const {
-          title,
-          explanation,
-          page = 1,
-          limit = 10,
-          searchTags,
-        } = req.query;
-        const pageNum = parseInt(page, 10);
-        const limitNum = parseInt(limit, 10);
-        const skip = (pageNum - 1) * limitNum;
+    try {
+      const {
+        search,
+        page = 1,
+        limit = 10,
+        searchTags,
+      } = req.query;
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+      const skip = (pageNum - 1) * limitNum;
 
-        let where = {};
+      let where = {};
+      // Add filters based on the search query if it exists
+      if (search) {
         where.OR = [
-          { isHidden: false },
-          { authorId: req.user.sub },
+          { title: { contains: search.toLowerCase() } },
+          { explanation: { contains: search.toLowerCase() } },
+          { language: { contains: search.toLowerCase()}},
         ];
-  
-        const additionalFilters = [];
-  
-        if (title) {
-          additionalFilters.push({ title: { contains: title.toLowerCase() } });
-        }
-
-        if (explanation) {
-          additionalFilters.push({ explanation: { contains: title.toLowerCase() } });
-        }
+      }
 
       // Add filter for tags if it exists
       if (searchTags) {
@@ -112,7 +103,8 @@ export default async function handler(req, res) {
           .map((tag) => tag.trim())
           .filter((tag) => tag);
       
-          additionalFilters.push({
+        if (!where.AND) where.AND = [];
+        where.AND.push({
           AND: tags.map((tag) => ({
             tags: {
               some: {
@@ -125,49 +117,42 @@ export default async function handler(req, res) {
         });
       }
 
-      if (additionalFilters.length > 0) {
-        where = {
-          AND: [where, ...additionalFilters],
-        };
-      }
-
-        // Fetch results from the database based on the 'where' condition
-        let results = await prisma.codeTemplate.findMany({
-          where,
-          include: {
-            author: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            }
+      // Fetch results from the database based on the 'where' condition
+      let results = await prisma.codeTemplate.findMany({
+        where,
+        include: {
+          author: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
           }
-        });
+        }
+      });
 
-        // Apply pagination after sorting
-        const paginatedResults = results.slice(skip, skip + limitNum);
+      // Apply pagination after sorting
+      const paginatedResults = results.slice(skip, skip + limitNum);
 
-        const resultsWithoutRatings = paginatedResults.map((result) => {
-          const { ratings, ...resultWithoutRatings } = result;
-          return resultWithoutRatings;
-        });
+      const resultsWithoutRatings = paginatedResults.map((result) => {
+        const { ratings, ...resultWithoutRatings } = result;
+        return resultWithoutRatings;
+      });
 
-        const totalPosts = results.length;
+      const totalPosts = results.length;
 
-        const response = {
-          templates: resultsWithoutRatings,
-          totalPosts,
-          page: pageNum,
-          pagesize: limitNum,
-          totalPages: Math.ceil(totalPosts / limitNum),
-        };
+      const response = {
+        templates: resultsWithoutRatings,
+        totalPosts,
+        page: pageNum,
+        pagesize: limitNum,
+        totalPages: Math.ceil(totalPosts / limitNum),
+      };
 
-        return res.status(200).json(response);
-      } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-    });
+      return res.status(200).json(response);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
 }
 

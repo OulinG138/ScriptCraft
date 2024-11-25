@@ -27,11 +27,7 @@ const routers = {
       limit: limit.toString(),
     };
     const queryString = new URLSearchParams(queryParams).toString();
-    if (accessToken) {
-      return authAxiosInstance.get(`/code/search?${queryString}`, getJWTHeader(accessToken));
-    } else {
-      return authAxiosInstance.get(`/code/search?${queryString}`);
-    }
+    return authAxiosInstance.get(`/code/search?${queryString}`);
   },
   getUserTemplates: async (
     accessToken: string | undefined,

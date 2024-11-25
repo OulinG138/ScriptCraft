@@ -5,7 +5,7 @@ const routers = {
     if (accessToken) {
       return authAxiosInstance.get(`/posts/${postId}`, getJWTHeader(accessToken));
     } else {
-      return authAxiosInstance.get(`/posts/${postId}`);
+      return authAxiosInstance.get(`/posts/${postId}/visitor`);
     }},
   postBlogPost: async (accessToken: string, payload: object) =>
     authAxiosInstance.post("/posts", payload, getJWTHeader(accessToken)),
