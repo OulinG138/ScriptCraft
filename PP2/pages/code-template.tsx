@@ -8,6 +8,10 @@ import { useRouter } from 'next/router';
 import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 
+import{
+  Button
+} from "@mui/material";
+
 const languages = [
     "python",
     "javascript",
@@ -36,6 +40,7 @@ export default function Coding() {
   const [editingToggle, setEditing] = useState(false)
   const [detailToggle, setDetail] = useState(true)
   const [inputToggle, setInputting] = useState(true)
+  const [dropdownToggle, setDropdown] = useState(false)
 
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState("");
@@ -129,6 +134,10 @@ export default function Coding() {
     setInputting(!inputToggle);
   }
 
+  const toggleDropdown = () => {
+    setDropdown(!dropdownToggle)
+  };
+
   const addTag = () =>  {
       var exists = tags.indexOf(newTag) > -1
       if (exists) {
@@ -174,11 +183,15 @@ export default function Coding() {
             newTags.push(tag.name)
         });
         setTags(newTags)
+        if(newTags) {
+          setCurrTag(newTags[0])
+        }
+
         setId(data.id)
 
         setIsOwner(auth.user?.id === data.authorId)
-        // TODO: Fill details
-        setAuthor("Author #" + data.authorId)
+
+        setAuthor(("Author #" + data.authorId).slice(0, 12))
 
         setParentId((data.parentTemplateId === null) ? "" : window.btoa(data.parentTemplateId))
 
@@ -241,11 +254,10 @@ export default function Coding() {
 
       <div className="flex items-center p-4 bg-gray-100 border-b border-gray-300 shadow">
         {detailToggle && (
-          <div className="flex flex-grow flex-col sm:flex-row sm:items-start sm:space-x-8 space-y-4 sm:space-y-0">
+          <div className="flex flex-grow flex-col sm:flex-row sm:items-start md:space-x-4 sm:space-x-8 space-y-4 sm:space-y-0">
             <div className="flex flex-col space-y-4">
-              <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-md font-semibold">Title:</h1>
-
+              <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                <h1 className="text-sm lg:text-base font-semibold">Title:</h1>
                 {editingToggle && (
                   <textarea
                     value={title}
@@ -254,59 +266,59 @@ export default function Coding() {
                   />
                 )}
                 {!editingToggle && (
-                  <h1 className="text-md font-semibold">{title}</h1>
+                  <h1 className="text-sm lg:text-base font-semibold">{title}</h1>
                 )}
               </div>
 
-              <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-md font-semibold">Description:</h1>
-
+              <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                <h1 className="text-sm lg:text-base font-semibold">Description:</h1>
                 {editingToggle && (
                   <textarea
                     value={desc}
                     onChange={(e) => setDesc(e.target.value)}
-                    className="resize-none w-[160px] sm:w-[300px] h-10 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-1 sm:p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="resize-none w-[150px] lg:w-[220px] h-10 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-1 sm:p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 )}
                 {!editingToggle && (
-                  <h1 className="text-md font-semibold">{desc}</h1>
+                  <h1 className="text-sm lg:text-base font-semibold">{desc}</h1>
                 )}
-
               </div>
 
-              <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-md font-semibold">Author:</h1>
-                <h1 className="text-md font-semibold">{author}</h1>
-              </div>
-
-            </div>
-
-            <div className="flex flex-col space-y-4">
-
-              <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-md font-semibold">Created On:</h1>
-                <h1 className="text-md font-semibold">{created}</h1>
-              </div>
-
-              <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-md font-semibold">Updated On:</h1>
-                <h1 className="text-md font-semibold">{updated}</h1>
-              </div>
-
-              {(!(parentId === "")) && (
-                  <div className="flex flex-row items-center sm:space-x-2 space-x-1">                
-                    <h1 className="text-md font-semibold">Parent Template:</h1>
-                    <a href={"/code-template?id=" + parentId}>Link</a>
-                  </div>
+              {!editingToggle && (
+                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                  <h1 className="text-sm lg:text-base font-semibold">Author:</h1>
+                  <h1 className="text-sm lg:text-base font-semibold">{author}</h1>
+                </div>
               )}
+
             </div>
+
+            {!editingToggle && (
+              <div className="flex flex-col space-y-4">
+                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                  <h1 className="text-sm lg:text-base font-semibold">Created On:</h1>
+                  <h1 className="text-xs lg:text-sm font-semibold">{created}</h1>
+                </div>
+                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                  <h1 className="text-sm lg:text-base font-semibold">Updated On:</h1>
+                  <h1 className="text-xs lg:text-sm font-semibold">{updated}</h1>
+                </div>
+                {!(parentId === "") && (
+                  <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                    <h1 className="text-sm lg:text-base font-semibold">Parent Template:</h1>
+                    <a href={`/code-template?id=${parentId}`}>Link</a>
+                  </div>
+                )}
+              </div>
+            )}
+
 
             <div className="flex flex-col sm:items-start items-start space-y-4">
-              <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-md font-semibold">Tags:</h1>
+              <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                <h1 className="text-sm lg:text-base font-semibold">Tags:</h1>
                 <select
                   onChange={(e) => setCurrTag(e.target.value)}
-                  className="bg-gray-200 border border-gray-300 rounded px-2 py-1 sm:px-4 sm:py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[120px] sm:w-[200px]"
+                  className="bg-gray-200 border border-gray-300 rounded px-2 py-1 sm:px-4 sm:py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[100px] lg:w-[170px]"
                 >
                   {tags.length === 0 && (
                     <option
@@ -328,28 +340,29 @@ export default function Coding() {
                   ))}
                 </select>
                 {editingToggle && (
-                  <button
+                  <Button
+                    variant="contained"
                     onClick={deleteTag}
                     disabled={tags.length === 0}
-                    className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-sm sm:text-base"
+                    className="bg-slate-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded text-xs sm:text-sm lg:text-base hover:bg-slate-600 disabled:bg-slate-300 disabled:hover:bg-slate-300"
                   >
-                    Delete Selected
-                  </button>
+                    Delete
+                  </Button>
                 )}
               </div>
 
               {editingToggle && (
-                <div className="flex flex-row items-center sm:space-x-2 space-x-1">
+                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
                   <textarea
                     value={newTag}
                     onKeyDown={handleKey}
                     onChange={(e) => setNewTag(e.target.value)}
-                    className="resize-none w-[120px] sm:w-[200px] h-6 sm:h-8 bg-gray-200 text-gray-900 border border-gray-300 rounded p-1 sm:p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="resize-none lg:w-[175px] w-[120px] h-6 sm:h-8 bg-gray-200 text-gray-900 border border-gray-300 rounded p-1 sm:p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     onClick={addTag}
                     disabled={newTag === ""}
-                    className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-sm sm:text-base"
+                    className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-xs lg:text-sm"
                   >
                     Add Tag
                   </button>
@@ -359,45 +372,52 @@ export default function Coding() {
           </div>
         )}
 
-        <div className="ml-auto flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
+        <div
+          className={`ml-auto ${
+            detailToggle
+              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-1 md:gap-3"
+              : "flex flex-row flex-wrap gap-1"
+          }`}
+        >
           {isOwner && (
-            <button onClick={deleteAlert}
-              className="bg-red-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-red-600 text-xs sm:text-base"
+            <button
+              onClick={deleteAlert}
+              className="bg-red-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-red-600 text-xs lg:text-sm"
             >
-              Delete Template
+              Delete
             </button>
           )}
           {detailToggle && isOwner && (
             <button
               onClick={toggleEditing}
-              className="bg-orange-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-orange-600 text-xs sm:text-base"
+              className="bg-orange-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-orange-600 text-xs lg:text-sm"
             >
               {editingToggle ? "Stop Editing" : "Edit"}
             </button>
           )}
           <button
             onClick={toggleDetail}
-            className="bg-slate-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-slate-600 text-xs sm:text-base"
+            className="bg-slate-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-slate-600 text-xs lg:text-sm"
           >
             {detailToggle ? "Hide Details" : "Show Details"}
           </button>
           {isOwner && (
             <button
               onClick={triggerSave}
-              className="bg-blue-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-blue-600 text-xs sm:text-base"
+              className="bg-blue-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-blue-600 text-xs lg:text-sm"
             >
-              Save Changes
+              Save
             </button>
           )}
-          <button onClick={forkAlert}
-            className="bg-green-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-green-600 text-xs sm:text-base"
+          <button
+            onClick={forkAlert}
+            className="bg-green-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-green-600 text-xs lg:text-sm"
           >
-            Fork Template
+            Fork
           </button>
         </div>
-
       </div>
-
+      
       {isSaving && (
             <div className="flex justify-center items-center p-2 bg-blue-500 space-x-2">
               <h1 className="text-white">{savingMessage}</h1>
