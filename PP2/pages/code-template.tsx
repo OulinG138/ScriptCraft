@@ -322,11 +322,11 @@ export default function Coding() {
                 >
                   {tags.length === 0 && (
                     <option
-                      key="== Add Tag =="
-                      value="== Add Tag =="
+                      key="No Tags"
+                      value="No Tags"
                       className="bg-gray-200 text-gray-800"
                     >
-                      == Add Tags ==
+                      No Tags
                     </option>
                   )}
                   {tags.map((tag) => (

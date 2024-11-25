@@ -156,7 +156,7 @@ export default function Coding() {
           <div className="flex flex-grow flex-col sm:flex-row sm:items-start sm:space-x-8 space-y-4 sm:space-y-0">
             <div className="flex flex-col space-y-4">
               <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-lg font-semibold">Title:</h1>
+                <h1 className="text-sm lg:text-base font-semibold">Title:</h1>
                 <textarea
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -168,12 +168,12 @@ export default function Coding() {
               </div>
 
               <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-lg font-semibold">Description:</h1>
+                <h1 className="text-sm lg:text-base font-semibold">Description:</h1>
                 <textarea
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                   className={isIncomplete && !desc ? "resize-none w-[200px] sm:w-[300px] h-12 sm:h-16 bg-gray-200 text-gray-900 border border-red-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-red-700" : 
-                    "resize-none w-[200px] sm:w-[300px] h-12 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    "resize-none w-[150px] lg:w-[220px] h-12 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   }
                 />
               </div>
@@ -181,18 +181,18 @@ export default function Coding() {
 
             <div className="flex flex-col sm:items-start items-start space-y-4">
               <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-lg font-semibold">Tags:</h1>
+                <h1 className="text-sm lg:text-base font-semibold">Tags:</h1>
                 <select
                   onChange={(e) => setCurrTag(e.target.value)}
-                  className="bg-gray-200 border border-gray-300 rounded px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[150px] sm:w-[200px]"
+                  className="bg-gray-200 border border-gray-300 rounded px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[100px] lg:w-[170px]]"
                 >
                   {tags.length === 0 && (
                     <option
-                      key="== Add Tag =="
-                      value="== Add Tag =="
+                      key="No Tags"
+                      value="No Tags"
                       className="bg-gray-200 text-gray-800"
                     >
-                      == Add Tags ==
+                      No Tags
                     </option>
                   )}
                   {tags.map((tag) => (
@@ -208,9 +208,9 @@ export default function Coding() {
                 <button
                   onClick={deleteTag}
                   disabled={tags.length === 0}
-                  className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-sm sm:text-base"
+                  className="bg-slate-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded text-xs sm:text-sm lg:text-base hover:bg-slate-600 disabled:bg-slate-300 disabled:hover:bg-slate-300"
                 >
-                  Delete Selected
+                  Delete
                 </button>
               </div>
 
@@ -218,12 +218,12 @@ export default function Coding() {
                 <textarea
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
-                  className="resize-none w-[150px] sm:w-[200px] h-8 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="resize-none lg:w-[175px] w-[120px] h-8 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   onClick={addTag}
                   disabled={newTag === ""}
-                  className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-sm sm:text-base"
+                  className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-xs lg:text-sm"
                 >
                   Add Tag
                 </button>
@@ -233,18 +233,18 @@ export default function Coding() {
           </div>
         )}
 
-        <div className="ml-auto flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
+        <div className="ml-auto flex flex-col sm:flex-row sm:space-x-3 space-y-2 sm:space-y-0">
           {savingToggle && (
             <button
               onClick={toggleSave}
-              className="bg-slate-500 text-white px-3 py-2 rounded hover:bg-slate-600 text-sm sm:text-base"
+              className="bg-slate-500 text-white px-2 py-2 rounded hover:bg-slate-600 text-sm sm:text-base"
             >
               Hide
             </button>
           )}
           <button
             onClick={triggerSave}
-            className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm sm:text-base"
+            className="bg-blue-500 text-white px-2 py-2 rounded hover:bg-blue-600 text-sm sm:text-base"
           >
             {savingToggle ? "Save" : "Create Code Template"}
           </button>
