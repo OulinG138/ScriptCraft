@@ -70,7 +70,7 @@ export default function Coding() {
     }
     setIsExecuting(false)
   }
-  
+
   const triggerSave = async () =>   {
       setIsSaving(true);
       setMessage("Saving Changes...")
@@ -331,7 +331,7 @@ export default function Coding() {
                   <button
                     onClick={deleteTag}
                     disabled={tags.length === 0}
-                    className="bg-slate-500 text-white px-1 py-0.5 sm:px-2 sm:py-1 rounded hover:bg-slate-600 text-xs sm:text-sm"
+                    className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-sm sm:text-base"
                   >
                     Delete Selected
                   </button>
@@ -349,7 +349,7 @@ export default function Coding() {
                   <button
                     onClick={addTag}
                     disabled={newTag === ""}
-                    className="bg-slate-500 text-white px-1 py-0.5 sm:px-2 sm:py-1 rounded hover:bg-slate-600 text-xs sm:text-sm"
+                    className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-sm sm:text-base"
                   >
                     Add Tag
                   </button>

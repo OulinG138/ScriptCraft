@@ -23,6 +23,7 @@ const languages = [
 export default function Coding() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [isSaving, setIsSaving] = useState(false)
+  const [isIncomplete, setIncomplete] = useState(false)
 
   const [editorToggle, setEditor] = useState(true)
   const [savingToggle, setSaving] = useState(false)
@@ -65,27 +66,31 @@ export default function Coding() {
   }
 
   const triggerSave = async () =>   {
-    if (savingToggle) {
-      if (auth.user === undefined) {
-        toast.error("Only Logged in Users can Save")
-      } else if (title === "" || desc === "" || code === "") {
-        toast.error("Fields not completed")
-      } else  {
-        setIsSaving(true)
-        const reqBody = { title: title, explanation: desc, codeContent: code, language: language, tags: tags}
-        const res = await API.code.template(reqBody, _.get(auth, "accessToken", ""),)
-        setIsSaving(false)
-
-        if (res.status === 200) {
-          toast.success("Template Successfully Created")
-          const encryptedId = window.btoa(res.data.template.id)
-          router.push("/code-template?id=" + encryptedId)
+    if (auth.user === undefined) {
+      toast.error("Only Logged in Users can Save")
+    } else {
+      if (savingToggle) {
+        if (title === "" || desc === "") {
+          toast.error("Fields not completed")
+          setIncomplete(true)
         } else  {
-          toast.error(res.data.message)
+          setIncomplete(false)
+          setIsSaving(true)
+          const reqBody = { title: title, explanation: desc, codeContent: code, language: language, tags: tags}
+          const res = await API.code.template(reqBody, _.get(auth, "accessToken", ""),)
+          setIsSaving(false)
+  
+          if (res.status === 200) {
+            toast.success("Template Successfully Created")
+            const encryptedId = window.btoa(res.data.template.id)
+            router.push("/code-template?id=" + encryptedId)
+          } else  {
+            toast.error(res.data.message)
+          }
         }
+      } else   {
+        setSaving(!savingToggle)
       }
-    } else   {
-      setSaving(!savingToggle)
     }
   }
 
@@ -155,7 +160,10 @@ export default function Coding() {
                 <textarea
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="resize-none w-[150px] sm:w-[200px] h-8 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={isIncomplete && !title ? "resize-none w-[150px] sm:w-[200px] h-8 bg-gray-200 text-gray-900 border border-red-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-red-700" : 
+                    "resize-none w-[150px] sm:w-[200px] h-8 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  }
+                  
                 />
               </div>
 
@@ -164,7 +172,9 @@ export default function Coding() {
                 <textarea
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
-                  className="resize-none w-[200px] sm:w-[300px] h-12 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={isIncomplete && !desc ? "resize-none w-[200px] sm:w-[300px] h-12 sm:h-16 bg-gray-200 text-gray-900 border border-red-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-red-700" : 
+                    "resize-none w-[200px] sm:w-[300px] h-12 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  }
                 />
               </div>
             </div>
@@ -198,7 +208,7 @@ export default function Coding() {
                 <button
                   onClick={deleteTag}
                   disabled={tags.length === 0}
-                  className="bg-slate-500 text-white px-2 py-1 rounded hover:bg-slate-600 text-sm sm:text-base"
+                  className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-sm sm:text-base"
                 >
                   Delete Selected
                 </button>
@@ -213,7 +223,7 @@ export default function Coding() {
                 <button
                   onClick={addTag}
                   disabled={newTag === ""}
-                  className="bg-slate-500 text-white px-2 py-1 rounded hover:bg-slate-600 text-sm sm:text-base"
+                  className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-sm sm:text-base"
                 >
                   Add Tag
                 </button>
