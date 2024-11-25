@@ -192,10 +192,10 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     setMounted(true);
   }, []);
 
-  // Load state from localStorage once mounted
+  // Load state from sessionStorage once mounted
   useEffect(() => {
     if (mounted) {
-      const savedState = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
+      const savedState = JSON.parse(sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
       setSearch(savedState.search || {title: "", content: "", codeTemplate: ""});
       setTags(savedState.tags || []);
       setSortBy(savedState.sortBy || "ratings");
@@ -204,11 +204,11 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     }
   }, [mounted]);
 
-  // Save state to localStorage whenever it changes
+  // Save state to sessionStorage whenever it changes
   useEffect(() => {
     if (mounted) {
       console.log('saving..', search)
-      localStorage.setItem(
+      sessionStorage.setItem(
         LOCAL_STORAGE_KEY,
         JSON.stringify({ search, tags, sortBy, page, postsPerPage })
       );

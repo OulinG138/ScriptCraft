@@ -37,7 +37,7 @@ const RatingsButtons = ({isVoting, userId, targetType, element, onReport, onVote
             Report
         </Button>
 
-        {targetType === 'post' && <Button 
+        {(targetType === 'post' && element.authorId === userId) && <Button 
             variant="text" 
             size={"medium"}
             color="error" 
@@ -49,7 +49,7 @@ const RatingsButtons = ({isVoting, userId, targetType, element, onReport, onVote
         <Button
             className={`w-${targetType === 'post' ? '9' : '6'}`} 
             sx={{
-                fontSize: targetType === "comment" ? 19 : 25,
+                fontSize: 20,
                 color: element.userRating?.value === 0 ? "#447cec" : "grey",
                 minWidth: 'auto', 
             }}
@@ -64,7 +64,7 @@ const RatingsButtons = ({isVoting, userId, targetType, element, onReport, onVote
         <Button
             className={`w-${targetType === 'post' ? '9' : '6'}`} 
             sx={{
-                fontSize: targetType === "comment" ? 19 : 25,
+                fontSize: 20,
                 color: element.userRating?.value === 1 ? "#447cec" : "grey",
                 minWidth: 'auto', 
             }}

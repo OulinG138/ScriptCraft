@@ -94,7 +94,7 @@ const routers = {
     if (accessToken) {
       return authAxiosInstance.get(`/comments/${commentId}/replies?${queryString}`, getJWTHeader(accessToken));
     } else {
-      return authAxiosInstance.get(`/comments${commentId}/replies/visitor?${queryString}`);
+      return authAxiosInstance.get(`/comments/${commentId}/replies/visitor?${queryString}`);
     }
   },
 

@@ -77,7 +77,8 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     try {
       const {
-        search,
+        title,
+        explanation,
         page = 1,
         limit = 10,
         searchTags,
@@ -87,13 +88,15 @@ export default async function handler(req, res) {
       const skip = (pageNum - 1) * limitNum;
 
       let where = {};
-      // Add filters based on the search query if it exists
-      if (search) {
-        where.OR = [
-          { title: { contains: search.toLowerCase() } },
-          { explanation: { contains: search.toLowerCase() } },
-          { language: { contains: search.toLowerCase()}},
-        ];
+
+      const additionalFilters = [];
+
+      if (title) {
+        additionalFilters.push({ title: { contains: title.toLowerCase() } });
+      }
+
+      if (explanation) {
+        additionalFilters.push({ explanation: { contains: explanation.toLowerCase() } });
       }
 
       // Add filter for tags if it exists
@@ -104,7 +107,7 @@ export default async function handler(req, res) {
           .filter((tag) => tag);
       
         if (!where.AND) where.AND = [];
-        where.AND.push({
+        additionalFilters.push({
           AND: tags.map((tag) => ({
             tags: {
               some: {
@@ -115,6 +118,12 @@ export default async function handler(req, res) {
             },
           })),
         });
+      }
+
+      if (additionalFilters.length > 0) {
+        where = {
+          AND: [where, ...additionalFilters],
+        };
       }
 
       // Fetch results from the database based on the 'where' condition

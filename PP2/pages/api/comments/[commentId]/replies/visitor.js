@@ -69,7 +69,6 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "GET") {
-    verifyToken(req, res, async () => {
       try {
         const {page = 1, limit = 10 } = req.query;
         const pageNum = parseInt(page, 10);
@@ -86,11 +85,6 @@ export default async function handler(req, res) {
                 lastName: true,
               },
             },
-            ratings: req.user?.sub ? {
-              where: {
-                userId: req.user?.sub,
-              },
-            } : false,
           }
         });
 
@@ -128,7 +122,6 @@ export default async function handler(req, res) {
         console.error(error);
         return res.status(500).json({ error: "Internal Server Error" });
       }
-    })
   } else {
     res.status(405).json({ message: `Method ${req.method} not allowed` });
   }
