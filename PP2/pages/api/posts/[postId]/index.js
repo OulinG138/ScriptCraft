@@ -144,7 +144,7 @@ export default async function handler(req, res) {
       if (post.isHidden && post.authorId !== req.user.sub) {
         return res.status(403).json({ error: "Unauthorized to view this post" });
       }
-      const userRating = post.ratings.length > 0 ? post.ratings[0].value : null;
+      const userRating = post.ratings[0];
       const transformedPost = { ...post, userRating };
       delete transformedPost.rating; 
       return res.status(200).json(transformedPost);
