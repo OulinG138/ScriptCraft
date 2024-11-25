@@ -1,21 +1,25 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
+import { useRouter } from "next/router";
+
 import { 
-  Typography, Container, Pagination, SelectChangeEvent
+  Typography, Container, Pagination, SelectChangeEvent, CircularProgress
 } from "@mui/material";
 
-import { useRouter } from "next/router";
 import CreatePostDialog from "./components/CreatePostDialog";
 import SearchBar from "../../components/SearchBar";
 import PostList from "./components/PostList";
 import Alert from "../../components/Alert";
+
+import { Post } from "../../components/interfaces";
+
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
-import { Post } from "../../components/interfaces";
 
 const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
+  const LOCAL_STORAGE_KEY = user ? "userBlogSearchState" : "blogSearchState";
 
   // posts states
   const [isLoading, setIsLoading] = useState(true);
@@ -178,8 +182,41 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     }
   };
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Load state from localStorage once mounted
+  useEffect(() => {
+    if (mounted) {
+      const savedState = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
+      setSearch(savedState.search || "");
+      setTags(savedState.tags || []);
+      setSortBy(savedState.sortBy || "ratings");
+      setPage(savedState.page || 1);
+      setPostsPerPage(savedState.postsPerPage || 5);
+    }
+  }, [mounted]);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify({ search, tags, sortBy, page, postsPerPage })
+      );
+    }
+  }, [search, tags, sortBy, page, postsPerPage, mounted]);
+
+  // Avoid rendering the component until mounted
+  if (!mounted) {
+    return <CircularProgress />;
+  }
+  
   return (
-    <Container sx={{ mb: user ? 3 : 6, mt: user ? 3 : 6 }}>
+    <Container sx={{ mb: 5, mt: 5 }}>
       <Typography variant="h4" className="pb-5">{user ? "User Blog Posts" : "Blog Posts"} </Typography>
 
       <SearchBar

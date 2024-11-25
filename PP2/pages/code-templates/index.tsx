@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { 
-  Typography, Container, Pagination, SelectChangeEvent
+  Typography, Container, Pagination, SelectChangeEvent, CircularProgress
 } from "@mui/material";
 
 import { useRouter } from "next/router";
@@ -26,6 +26,8 @@ interface Post {
 }
 
 const TemplatesPage = ({ user = false }: { user?: boolean }) => {
+  const LOCAL_STORAGE_KEY = user ? "userTemplateSearchState" : "templateSearchState";
+
   // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
@@ -132,9 +134,45 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
       handleSearchClick();
     }
   };
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Load state from localStorage once mounted
+  useEffect(() => {
+    if (mounted) {
+      const savedState = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
+      setSearch(savedState.search || "");
+      setTags(savedState.tags || []);
+      setSortBy(savedState.sortBy || "ratings");
+      setPage(savedState.page || 1);
+      setPostsPerPage(savedState.postsPerPage || 5);
+    }
+  }, [mounted]);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify({ search, tags, sortBy, page, postsPerPage })
+      );
+    }
+  }, [search, tags, sortBy, page, postsPerPage, mounted]);
+
+  // Avoid rendering the component until mounted
+  if (!mounted) {
+    return <CircularProgress />;
+  }
+
   return (
-    <Container sx={{ mb: user ? 3 : 6, mt: user ? 3 : 6 }}>
-      <Typography variant="h4" className="pb-5">Code Templates</Typography>
+    <Container sx={{ mb: 5, mt: 5}}>
+      <Typography variant="h4" className="pb-5">
+        {user ? "User Code Templates" : "Code Templates"}
+      </Typography>
 
       <SearchBar
           auth={auth}
