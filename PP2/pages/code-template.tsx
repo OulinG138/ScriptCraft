@@ -155,7 +155,6 @@ export default function Coding() {
   }
 
   const handleKey = (e: { key: string; }) =>  {
-    console.log(e.key)
     if (e.key === "Enter") {
       addTag()
     }
@@ -255,7 +254,9 @@ export default function Coding() {
       <div className="flex items-center p-4 bg-gray-100 border-b border-gray-300 shadow">
         {detailToggle && (
           <div className="flex flex-grow flex-col sm:flex-row sm:items-start md:space-x-4 sm:space-x-8 space-y-4 sm:space-y-0">
+
             <div className="flex flex-col space-y-4">
+              
               <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
                 <h1 className="text-sm lg:text-base font-semibold">Title:</h1>
                 {editingToggle && (
@@ -266,56 +267,98 @@ export default function Coding() {
                   />
                 )}
                 {!editingToggle && (
-                  <h1 className="text-sm lg:text-base font-semibold">{title}</h1>
+                  <h1 className="text-sm lg:text-base font-semibold max-w-[200px] md:max-w-[150px] break-words">
+                    {title}
+                  </h1>
                 )}
               </div>
 
-              <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                <h1 className="text-sm lg:text-base font-semibold">Description:</h1>
-                {editingToggle && (
-                  <textarea
-                    value={desc}
-                    onChange={(e) => setDesc(e.target.value)}
-                    className="resize-none w-[150px] lg:w-[220px] h-10 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-1 sm:p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                )}
-                {!editingToggle && (
-                  <h1 className="text-sm lg:text-base font-semibold">{desc}</h1>
-                )}
-              </div>
-
-              {!editingToggle && (
+              {editingToggle && (
                 <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                  <h1 className="text-sm lg:text-base font-semibold">Author:</h1>
-                  <h1 className="text-sm lg:text-base font-semibold">{author}</h1>
+                  <h1 className="text-sm lg:text-base font-semibold">Description:</h1>
+                    <textarea
+                      value={desc}
+                      onChange={(e) => setDesc(e.target.value)}
+                      className="resize-none w-[150px] lg:w-[220px] h-10 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-1 sm:p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                 </div>
               )}
 
+
+                {!editingToggle && (
+                  <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                    <h1 className="text-sm lg:text-base font-semibold">Author:</h1>
+                    <h1 className="text-sm lg:text-base font-semibold">{author}</h1>
+                  </div>
+                )}
+
+                
+                {!editingToggle && (
+                  <div className="flex flex-col space-y-4">
+                    <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                      <h1 className="text-sm lg:text-base font-semibold">Created On:</h1>
+                      <h1 className="text-xs lg:text-sm font-semibold">{created}</h1>
+                    </div>
+                    <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                      <h1 className="text-sm lg:text-base font-semibold">Updated On:</h1>
+                      <h1 className="text-xs lg:text-sm font-semibold">{updated}</h1>
+                    </div>
+                    {!(parentId === "") && (
+                      <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                        <h1 className="text-sm lg:text-base font-semibold">Parent Template:</h1>
+                        <a className="text-blue-500 hover:text-blue-700 underline text-xs lg:text-sm"
+                          href={`/code-template?id=${parentId}`}>Link</a>
+                      </div>
+                    )}
+                  </div>
+                )}
             </div>
 
             {!editingToggle && (
-              <div className="flex flex-col space-y-4">
+              <div className="flex flex-col space-y-2">
                 <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                  <h1 className="text-sm lg:text-base font-semibold">Created On:</h1>
-                  <h1 className="text-xs lg:text-sm font-semibold">{created}</h1>
-                </div>
-                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                  <h1 className="text-sm lg:text-base font-semibold">Updated On:</h1>
-                  <h1 className="text-xs lg:text-sm font-semibold">{updated}</h1>
-                </div>
-                {!(parentId === "") && (
-                  <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                    <h1 className="text-sm lg:text-base font-semibold">Parent Template:</h1>
-                    <a className="text-blue-500 hover:text-blue-700 underline text-xs lg:text-sm"
-                      href={`/code-template?id=${parentId}`}>Link</a>
+                  <h1 className="text-sm lg:text-base font-semibold">Description:</h1>
+                    <h1 className="lg:text-sm text-xs font-semibold max-w-[135px] lg:max-w-[180px] break-words">
+                      {desc}
+                    </h1>
                   </div>
-                )}
+
+                  <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+
+                    <h1 className="text-sm lg:text-base font-semibold">Tags:</h1>
+                    <select
+                      onChange={(e) => setCurrTag(e.target.value)}
+                      className="bg-gray-200 border border-gray-300 rounded px-2 py-1 sm:px-4 sm:py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[100px] lg:w-[170px]"
+                    >
+                      {tags.length === 0 && (
+                        <option
+                          key="No Tags"
+                          value="No Tags"
+                          className="bg-gray-200 text-gray-800"
+                        >
+                          No Tags
+                        </option>
+                      )}
+                      {tags.map((tag) => (
+                        <option
+                          key={tag}
+                          value={tag}
+                          className="bg-gray-200 text-gray-800"
+                        >
+                          {tag}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
               </div>
+
             )}
 
 
             <div className="flex flex-col sm:items-start items-start space-y-4">
-              <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+              {editingToggle && (
+                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+
                 <h1 className="text-sm lg:text-base font-semibold">Tags:</h1>
                 <select
                   onChange={(e) => setCurrTag(e.target.value)}
@@ -340,7 +383,6 @@ export default function Coding() {
                     </option>
                   ))}
                 </select>
-                {editingToggle && (
                   <Button
                     variant="contained"
                     onClick={deleteTag}
@@ -349,8 +391,9 @@ export default function Coding() {
                   >
                     Delete
                   </Button>
-                )}
               </div>
+              )}
+  
 
               {editingToggle && (
                 <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
