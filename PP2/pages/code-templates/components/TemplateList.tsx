@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 
 interface Post {
   id: number,
@@ -22,9 +22,9 @@ interface PostListProps {
 }
 const PostList = ({ isLoading, posts, onPostClick }: PostListProps) => (
   <Box sx={{ display: "grid", gridTemplateColumns: "1fr", gap: 3 }}>
-    {isLoading && <Typography variant="h5"sx={{ textAlign: 'center' }}> Loading... </Typography>}
+    {isLoading && <CircularProgress/>}
 
-    {(!isLoading && posts.length === 0) && <Typography variant="h5"sx={{ textAlign: 'center' }}> No Posts </Typography>}
+    {(!isLoading && posts.length === 0) && <Typography variant="h5"sx={{ textAlign: 'center' }}> No Templates </Typography>}
 
     {posts.map((post) => (
       <Box

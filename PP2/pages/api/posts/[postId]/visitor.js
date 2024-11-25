@@ -167,87 +167,83 @@ export default async function handler(req, res) {
       }
     });
   } else if (req.method === "GET") {
-    try {
-      const { sortBy = "ratings", page = 1, limit = 10 } = req.query;
-      const pageNum = parseInt(page, 10);
-      const limitNum = parseInt(limit, 10);
-      const skip = (pageNum - 1) * limitNum;
+    verifyToken(req, res, async () => {
+      try {
+        const { sortBy = "ratings", page = 1, limit = 10 } = req.query;
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const skip = (pageNum - 1) * limitNum;
 
-      verifyLoggedIn(req, res);
-      let where;
-      if (!req.user) {
-        where = { postId: Number(postId), isHidden: false, parentCommentId: null};
-      } else {
-        where = {
-          postId: Number(postId),
-          parentCommentId: null,
-          OR: [{ isHidden: false }, { authorId: req.user.sub }]
-        };
-      }
+        let where = {};
+        where.OR = [
+          { isHidden: false },
+          { authorId: req.user.sub },
+        ];
 
-      let results = await prisma.comment.findMany({
-        where,
-        include: {
-          author: {
-            select: {
-              firstName: true,
-              lastName: true,
+        let results = await prisma.comment.findMany({
+          where,
+          include: {
+            author: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
             },
+            author: true,
+            replies: true,
+            ratings: req.user?.sub ? {
+              where: {
+                userId: req.user?.sub,
+              },
+            } : false,
           },
-          author: true,
-          replies: true,
-          ratings: req.user?.sub ? {
-            where: {
-              userId: req.user?.sub,
-            },
-          } : false,
-        },
-      });
-                
-      results = results.map(comment => ({
-        ...comment,
-        repliesCount: comment.replies.length,
-        replies: undefined,
-        ratings: undefined,
-        userRating: comment.ratings?.length ? comment.ratings[0] : undefined,
-      }));
-
-      // Sort results based on the 'sortBy' parameter or createdAt date
-      if (sortBy === "ratings") {
-        results = results.sort((a, b) => {
-          const aRatingCount = a.ratingCount;
-          const bRatingCount = b.ratingCount;
-          return bRatingCount - aRatingCount;
         });
-      } else {
-        results = results.sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-        );
+                  
+        results = results.map(comment => ({
+          ...comment,
+          repliesCount: comment.replies.length,
+          replies: undefined,
+          ratings: undefined,
+          userRating: comment.ratings?.length ? comment.ratings[0] : undefined,
+        }));
+
+        // Sort results based on the 'sortBy' parameter or createdAt date
+        if (sortBy === "ratings") {
+          results = results.sort((a, b) => {
+            const aRatingCount = a.ratingCount;
+            const bRatingCount = b.ratingCount;
+            return bRatingCount - aRatingCount;
+          });
+        } else {
+          results = results.sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+        }
+
+        // Apply pagination after sorting
+        const paginatedResults = results.slice(skip, skip + limitNum);
+
+        const resultsWithoutRatings = paginatedResults.map((result) => {
+          const { ratings, ...resultWithoutRatings } = result;
+          return resultWithoutRatings;
+        });
+
+        const totalComments = results.length;
+
+        const response = {
+          comments: resultsWithoutRatings,
+          totalComments,
+          page: pageNum,
+          pagesize: limitNum,
+          totalPages: Math.ceil(totalComments / limitNum),
+        };
+
+        return res.status(200).json(response);
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error" });
       }
-
-      // Apply pagination after sorting
-      const paginatedResults = results.slice(skip, skip + limitNum);
-
-      const resultsWithoutRatings = paginatedResults.map((result) => {
-        const { ratings, ...resultWithoutRatings } = result;
-        return resultWithoutRatings;
-      });
-
-      const totalComments = results.length;
-
-      const response = {
-        comments: resultsWithoutRatings,
-        totalComments,
-        page: pageNum,
-        pagesize: limitNum,
-        totalPages: Math.ceil(totalComments / limitNum),
-      };
-
-      return res.status(200).json(response);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+    })
   } else {
     res.status(405).json({ message: `Method ${req.method} not allowed` });
   }

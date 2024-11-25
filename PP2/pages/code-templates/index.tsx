@@ -1,11 +1,11 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { 
-  Typography, Container, Pagination, SelectChangeEvent, CircularProgress
+  Box, Button, Typography, Container, Pagination, SelectChangeEvent, CircularProgress
 } from "@mui/material";
-
+import EditIcon from '@mui/icons-material/Edit';
 import { useRouter } from "next/router";
 import TemplateList from "./components/TemplateList";
-import SearchBar from "../../components/SearchBar";
+import TemplatesSearchBar from "./components/TemplatesSearchBar";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
 
@@ -39,7 +39,7 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   const [page, setPage] = useState(1);
 
   // search states
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState({ title: "", explanation: ""});
   const [searchTags, setSearchTags] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("ratings");
@@ -62,28 +62,32 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
         }
         response = await API.code.getUserTemplates(
           auth.accessToken,
-          search,
+          search.title, search.explanation,
           tags,
           page,
           postsPerPage
         );
+        setPosts(response.data.posts);
+        setTotalPosts(response.data.totalPosts);
       } else {
         response = await API.code.getPaginatedTemplates(
           auth.accessToken,
-          search,
+          search.title, search.explanation,
           tags,
           page,
           postsPerPage
         );
+        setPosts(response.data.posts);
+        setTotalPosts(response.data.totalPosts);
       }
-      setPosts(response.data.templates);
-      setTotalPosts(response.data.totalPosts);
     } catch (error) {
       console.error("Error fetching posts", error);
     } finally {
+      console.log(posts);
       setIsLoading(false);
-    }  
+    }
   };
+
 
   const handleTagsKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (["Enter", " ", ","].includes(event.key)) {
@@ -170,13 +174,24 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
 
   return (
     <Container sx={{ mb: 5, mt: 5}}>
-      <Typography variant="h4" className="pb-5">
-        {user ? "User Code Templates" : "Code Templates"}
-      </Typography>
+      <Box sx={{display: "flex", flexDirection: "row"}}> 
+        <Typography variant="h4" className="pb-5" sx={{whiteSpace: 'nowrap', width:'auto'}}>{user ? "User Code Templates" : "Code Templates"} </Typography>
 
-      <SearchBar
+        {auth &&
+        <Box sx={{ height: "100%", display: 'flex', width: { xs: '100%', sm: '100%', md: 'auto'}, flexGrow: { md: 1, xs: 0, sm: 0}, justifyContent: 'flex-end'  }}>
+          <Button
+            variant="contained"
+            onClick={()=> router.push('/coding')}
+            sx={{whiteSpace: 'nowrap', width:'auto'}}
+          >
+            <EditIcon sx={{ pr: 1}}> </EditIcon>
+            Create Template
+          </Button>
+        </Box>}
+      </Box>
+
+      <TemplatesSearchBar
           auth={auth}
-          type={"template"}
           search={search}
           setSearch={setSearch}
           onKeyDown={handleSearchKeyDown}
@@ -186,7 +201,6 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
           onTagsKeyDown={handleTagsKeyDown}
           sortBy={sortBy}
           onSortChange={handleSortChange}
-          onCreatePostClick={()=> router.push('/coding')}
           tags={tags}
           onTagDelete={handleTagDelete}
           postsPerPage={postsPerPage}

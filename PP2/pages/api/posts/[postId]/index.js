@@ -1,5 +1,5 @@
 import prisma from "@/utils/db";
-import { verifyLoggedIn, verifyToken } from "@/utils/auth";
+import { verifyToken } from "@/utils/auth";
 
 /**
  * @swagger
@@ -113,23 +113,11 @@ import { verifyLoggedIn, verifyToken } from "@/utils/auth";
  */
 
 export default async function handler(req, res) {
+  const { postId } = req.query;
   if (req.method === "GET") {
-    const { postId } = req.query;
-
-    try {
-      let where = { id: Number(postId) };
-      verifyLoggedIn(req, res);
-      if (!req.user) {
-        where.isHidden = false;
-      } else {
-        where = {
-          ...where,
-          OR: [{ isHidden: false }, { authorId: req.user.sub }],
-        };
-      }
-      
+    try {      
       let post = await prisma.BlogPost.findUnique({
-        where,
+        where: { id: Number(postId) },
         include: {
           author: {
             select: {
@@ -151,13 +139,10 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: "Post not found" });
       }
 
-      if (post.isHidden) {
-        verifyLoggedIn(req);
-        if (!req.user || req.userId != post.authorId) {
-          return res
-            .status(403)
-            .json({ error: "Unauthorized to view this post" });
-        }
+      if (post.isHidden && req.user?.sub !== post.authorId) {
+        return res
+          .status(403)
+          .json({ error: "Unauthorized to view this post" });
       }
 
       if (post.ratings && post.ratings.length > 0) {

@@ -13,13 +13,15 @@ const routers = {
     authAxiosInstance.post("/code/template", payload, getJWTHeader(accessToken)),
   getPaginatedTemplates: async (
     accessToken: string | undefined,
-    search: string,
+    title: string,
+    explanation: string,
     tags: string[],
     page: number,
     limit: number
   ) => {
     const queryParams: Record<string, string> = {
-      search,
+      title,
+      explanation,
       searchTags: tags.join(", "),
       page: page.toString(),
       limit: limit.toString(),
@@ -33,13 +35,14 @@ const routers = {
   },
   getUserTemplates: async (
     accessToken: string | undefined,
-    search: string,
+    title: string,
+    explanation: string,
     tags: string[],
     page: number,
     limit: number
   ) => {
     const queryParams: Record<string, string> = {
-      search,
+      title, explanation,
       searchTags: tags.join(", "),
       page: page.toString(),
       limit: limit.toString(),

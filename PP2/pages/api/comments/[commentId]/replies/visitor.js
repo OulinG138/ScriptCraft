@@ -1,4 +1,4 @@
-import { verifyToken, verifyLoggedIn } from "@/utils/auth";
+import { verifyToken } from "@/utils/auth";
 import prisma from "@/utils/db";
 
 /**
@@ -69,74 +69,66 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "GET") {
-    try {
-      const {page = 1, limit = 10 } = req.query;
-      const pageNum = parseInt(page, 10);
-      const limitNum = parseInt(limit, 10);
-      const skip = (pageNum - 1) * limitNum;
+    verifyToken(req, res, async () => {
+      try {
+        const {page = 1, limit = 10 } = req.query;
+        const pageNum = parseInt(page, 10);
+        const limitNum = parseInt(limit, 10);
+        const skip = (pageNum - 1) * limitNum;
 
-      verifyLoggedIn(req, res);
-      let where;
-      if (!req.user) {
-        where = {isHidden: false, parentCommentId: Number(commentId)};
-      } else {
-        where = {
-          parentCommentId: Number(commentId),
-          OR: [{ isHidden: false }, { authorId: req.user.sub }],
+
+        let results = await prisma.comment.findMany({
+          where: {isHidden: false, parentCommentId: Number(commentId)},
+          include: {
+            author: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+            ratings: req.user?.sub ? {
+              where: {
+                userId: req.user?.sub,
+              },
+            } : false,
+          }
+        });
+
+        results = results.map(comment => ({
+          ...comment,
+          ratings: undefined,
+          userRating: comment.ratings?.length ? comment.ratings[0] : undefined,
+        }));
+
+
+        results = results.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        // Apply pagination after sorting
+        const paginatedResults = results.slice(skip, skip + limitNum);
+
+        const resultsWithoutRatings = paginatedResults.map((result) => {
+          const { ratings, ...resultWithoutRatings } = result;
+          return resultWithoutRatings;
+        });
+
+        const totalReplies = results.length;
+
+        const response = {
+          replies: resultsWithoutRatings,
+          totalReplies,
+          page: pageNum,
+          pagesize: limitNum,
+          totalPages: Math.ceil(totalReplies / limitNum),
         };
+
+        return res.status(200).json(response);
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error" });
       }
-
-      let results = await prisma.comment.findMany({
-        where,
-        include: {
-          author: {
-            select: {
-              firstName: true,
-              lastName: true,
-            },
-          },
-          ratings: req.user?.sub ? {
-            where: {
-              userId: req.user?.sub,
-            },
-          } : false,
-        }
-      });
-
-      results = results.map(comment => ({
-        ...comment,
-        ratings: undefined,
-        userRating: comment.ratings?.length ? comment.ratings[0] : undefined,
-      }));
-
-
-      results = results.sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      );
-
-      // Apply pagination after sorting
-      const paginatedResults = results.slice(skip, skip + limitNum);
-
-      const resultsWithoutRatings = paginatedResults.map((result) => {
-        const { ratings, ...resultWithoutRatings } = result;
-        return resultWithoutRatings;
-      });
-
-      const totalReplies = results.length;
-
-      const response = {
-        replies: resultsWithoutRatings,
-        totalReplies,
-        page: pageNum,
-        pagesize: limitNum,
-        totalPages: Math.ceil(totalReplies / limitNum),
-      };
-
-      return res.status(200).json(response);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+    })
   } else {
     res.status(405).json({ message: `Method ${req.method} not allowed` });
   }

@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Box, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from "@mui/material";
+import { Box, Chip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Typography } from "@mui/material";
 import API from "@/routes/API";
 
 interface CreatePostDialogProps {
   dialogType: "create" | "edit";
   open: boolean;
+  isHidden?: boolean;
   post: {
     title: string;
     description: string;
@@ -21,6 +22,7 @@ interface CreatePostDialogProps {
 const CreatePostDialog = ({
   dialogType,
   open,
+  isHidden,
   post,
   onClose,
   onChange,
@@ -94,87 +96,99 @@ const CreatePostDialog = ({
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>{dialogType === 'create' ? 'Create Blog Post' : 'Edit Blog Post'}</DialogTitle>
-
-      <DialogContent>
-        <TextField
-          label="Title"
-          fullWidth
-          margin="normal"
-          value={post.title}
-          onChange={(e) => onChange("title", e.target.value)}
-        />
-        <TextField
-          label="Description"
-          fullWidth
-          margin="normal"
-          value={post.description}
-          onChange={(e) => onChange("description", e.target.value)}
-        />
-        <TextField
-          label="Content"
-          fullWidth
-          multiline
-          rows={4}
-          margin="normal"
-          value={post.content}
-          onChange={(e) => onChange("content", e.target.value)}
-        />
-        <TextField
-          label="Tags"
-          variant="outlined"
-          size="small"
-          fullWidth
-          value={currentTag}
-          onChange={(e) => setCurrentTag(e.target.value)}
-          onKeyDown={handleTagsKeyDown}
-          sx={{ marginRight: 2 }}
-          placeholder="Press enter to add tag"
-        />
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', marginBottom: 2 }}>
-          {post.tags.map((tag) => (
-            <Chip
-              key={tag}
-              label={tag}
-              onDelete={() => handleTagDelete(tag)}
-              sx={{ marginRight: 1, marginBottom: 1 }}
+      {!isHidden ?
+        (<>
+          <DialogContent>
+            <TextField
+              label="Title"
+              fullWidth
+              margin="normal"
+              value={post.title}
+              onChange={(e) => onChange("title", e.target.value)}
             />
-          ))}
-        </Box>
-
-        <TextField
-          label="Code Template Links"
-          fullWidth
-          variant="outlined"
-          size="small"
-          value={currentLink}
-          onChange={(e) => setCurrentLink(e.target.value)}
-          onKeyDown={handleLinkKeyDown}
-          sx={{ marginRight: 2 }}
-          placeholder="Press enter to link template"
-        />
-
-        {!isLinkValid && (
-          <p style={{ color: 'red' }}>Not a valid link</p>
-        )}
-
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', marginBottom: 2 }}>
-          {post.codeTemplateLinks.map((link) => (
-            <Chip
-              key={link}
-              label={link}
-              onDelete={() => handleLinkDelete(link)}
-              sx={{ marginRight: 1, marginBottom: 1 }}
+            <TextField
+              label="Description"
+              fullWidth
+              margin="normal"
+              value={post.description}
+              onChange={(e) => onChange("description", e.target.value)}
             />
-          ))}
-        </Box>
+            <TextField
+              label="Content"
+              fullWidth
+              multiline
+              rows={4}
+              margin="normal"
+              value={post.content}
+              onChange={(e) => onChange("content", e.target.value)}
+            />
+            <TextField
+              label="Tags"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={currentTag}
+              onChange={(e) => setCurrentTag(e.target.value)}
+              onKeyDown={handleTagsKeyDown}
+              sx={{ marginRight: 2 }}
+              placeholder="Press enter to add tag"
+            />
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', marginBottom: 2 }}>
+              {post.tags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  onDelete={() => handleTagDelete(tag)}
+                  sx={{ marginRight: 1, marginBottom: 1 }}
+                />
+              ))}
+            </Box>
 
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSubmit} variant="contained">
-          {dialogType === 'create' ? "Submit" : "Save"}
-        </Button>
-      </DialogActions>
+            <TextField
+              label="Code Template Links"
+              fullWidth
+              variant="outlined"
+              size="small"
+              value={currentLink}
+              onChange={(e) => setCurrentLink(e.target.value)}
+              onKeyDown={handleLinkKeyDown}
+              sx={{ marginRight: 2 }}
+              placeholder="Press enter to link template"
+            />
+
+            {!isLinkValid && (
+              <p style={{ color: 'red' }}>Not a valid link</p>
+            )}
+
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', marginBottom: 2 }}>
+              {post.codeTemplateLinks.map((link) => (
+                <Chip
+                  key={link}
+                  label={link}
+                  onDelete={() => handleLinkDelete(link)}
+                  sx={{ marginRight: 1, marginBottom: 1 }}
+                />
+              ))}
+            </Box>
+
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={onSubmit} variant="contained">
+              {dialogType === 'create' ? "Submit" : "Save"}
+            </Button>
+          </DialogActions>
+        </>) :
+        (<>
+          <DialogContent>
+            <Typography variant="body1">Cannot edit a hidden post</Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={onClose}>Cancel</Button>
+          </DialogActions>
+        </>
+        )
+      }
     </Dialog>
   );
 };

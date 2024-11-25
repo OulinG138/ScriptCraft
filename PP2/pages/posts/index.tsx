@@ -2,11 +2,12 @@ import React, { useState, useEffect, ChangeEvent } from "react";
 import { useRouter } from "next/router";
 
 import { 
-  Typography, Container, Pagination, SelectChangeEvent, CircularProgress
+  Typography, Box, Button, Container, Pagination, SelectChangeEvent, CircularProgress
 } from "@mui/material";
+import EditIcon from '@mui/icons-material/Edit';
 
 import CreatePostDialog from "./components/CreatePostDialog";
-import SearchBar from "../../components/SearchBar";
+import SearchBar from "./components/PostsSearchBar";
 import PostList from "./components/PostList";
 import Alert from "../../components/Alert";
 
@@ -28,7 +29,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   const [page, setPage] = useState(1);
 
   // search states
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState({title: "", content: "", codeTemplate: ""});
   const [searchTags, setSearchTags] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("ratings");
@@ -62,30 +63,33 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
         }
         response = await API.blogpost.getUserBlogPosts(
           auth.accessToken,
-          search,
+          search.title, search.content, search.codeTemplate,
           tags,
           sortBy,
           page,
           postsPerPage
         );
+        setPosts(response.data.posts);
+        setTotalPosts(response.data.totalPosts);
       } else {
         response = await API.blogpost.getPaginatedBlogPosts(
           auth.accessToken,
-          search,
+          search.title, search.content, search.codeTemplate,
           tags,
           sortBy,
           page,
           postsPerPage
         );
+        setPosts(response.data.posts);
+        setTotalPosts(response.data.totalPosts);
       }
-      setPosts(response.data.posts);
-      setTotalPosts(response.data.totalPosts);
     } catch (error) {
       console.error("Error fetching posts", error);
     } finally {
+      console.log(posts);
       setIsLoading(false);
     }
-  };;
+  };
 
   const onPostsPerPageChange = (event: SelectChangeEvent<number>) => {
     setPostsPerPage(Number(event.target.value));
@@ -192,7 +196,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   useEffect(() => {
     if (mounted) {
       const savedState = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
-      setSearch(savedState.search || "");
+      setSearch(savedState.search || {title: "", content: "", codeTemplate: ""});
       setTags(savedState.tags || []);
       setSortBy(savedState.sortBy || "ratings");
       setPage(savedState.page || 1);
@@ -203,6 +207,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   // Save state to localStorage whenever it changes
   useEffect(() => {
     if (mounted) {
+      console.log('saving..', search)
       localStorage.setItem(
         LOCAL_STORAGE_KEY,
         JSON.stringify({ search, tags, sortBy, page, postsPerPage })
@@ -217,11 +222,24 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   
   return (
     <Container sx={{ mb: 5, mt: 5 }}>
-      <Typography variant="h4" className="pb-5">{user ? "User Blog Posts" : "Blog Posts"} </Typography>
+      <Box sx={{display: "flex", flexDirection: "row"}}> 
+        <Typography variant="h4" className="pb-5" sx={{whiteSpace: 'nowrap', width:'auto'}}>{user ? "User Blog Posts" : "Blog Posts"} </Typography>
+
+        {auth &&
+        <Box sx={{ height: "100%", display: 'flex', width: { xs: '100%', sm: '100%', md: 'auto'}, flexGrow: { md: 1, xs: 0, sm: 0}, justifyContent: 'flex-end'  }}>
+          <Button
+            variant="contained"
+            onClick={openCreatePostDialog}
+            sx={{whiteSpace: 'nowrap', width:'auto'}}
+          >
+            <EditIcon sx={{ pr: 1}}> </EditIcon>
+            Create Post
+          </Button>
+        </Box>}
+      </Box>
 
       <SearchBar
         auth={auth}
-        type={'post'}
         search={search}
         setSearch={setSearch}
         onKeyDown={handleSearchKeyDown}
@@ -231,15 +249,15 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
         onTagsKeyDown={handleTagsKeyDown}
         sortBy={sortBy}
         onSortChange={handleSortChange}
-        onCreatePostClick={openCreatePostDialog}
         tags={tags}
         onTagDelete={handleTagDelete}
         postsPerPage={postsPerPage}
         onPostsPerPageChange={onPostsPerPageChange}
       />
 
-      <PostList isLoading={isLoading} posts={posts} onPostClick={handlePostClick}/>
-
+      <Box className="mt-5">
+        <PostList isLoading={isLoading} posts={posts} onPostClick={handlePostClick}/>
+      </Box>
       {posts.length > 0 &&
         <Pagination
         sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}

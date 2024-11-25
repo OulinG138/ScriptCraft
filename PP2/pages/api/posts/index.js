@@ -1,4 +1,4 @@
-import { verifyToken, verifyLoggedIn } from "@/utils/auth";
+import { verifyToken } from "@/utils/auth";
 import prisma from "@/utils/db";
 
 /**
@@ -191,51 +191,47 @@ export default async function handler(req, res) {
       }
     });
   } else if (req.method === "GET") {
+    verifyToken(req, res, async () => {
     try {
       const {
-        search,
+        title,
+        content,
+        codeTemplate,
         sortBy = "ratings",
         page = 1,
         limit = 10,
-        codeTemplateId,
         searchTags,
       } = req.query;
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
       const skip = (pageNum - 1) * limitNum;
 
-      verifyLoggedIn(req, res);
-      let where;
-      if (!req.user) {
-        where = { isHidden: false };
-      } else {
-        where = {
-          OR: [{ isHidden: false }, { authorId: req.userId }],
-        };
-      }
+      let where = {};
+      where.OR = [
+        { isHidden: false },
+        { authorId: req.user.sub },
+      ];
 
-      // Add filters based on the search query if it exists
-      if (search) {
-        where.OR = [
-          { title: { contains: search.toLowerCase() } },
-          { content: { contains: search.toLowerCase() } },
-          {
-            codeTemplates: {
-              some: {
-                title: { contains: search.toLowerCase() },
-              },
-            },
-          },
-        ];
-      }
+      const additionalFilters = [];
 
-      // Add filter for codeTemplateId if it exists
-      if (codeTemplateId) {
-        if (!where.AND) where.AND = [];
-        where.AND.push({
+      if (title) {
+        additionalFilters.push({ title: { contains: title.toLowerCase() } });
+      }
+    
+      if (content) {
+        additionalFilters.push({ content: { contains: content.toLowerCase() } });
+      }
+    
+      if (codeTemplate) {
+        additionalFilters.push({
           codeTemplates: {
             some: {
-              id: Number(codeTemplateId),
+              OR: [
+                { title: { contains: codeTemplate.toLowerCase() } },
+                { codeContent: { contains: codeTemplate.toLowerCase() } },
+                { explanation: { contains: codeTemplate.toLowerCase() } },
+                { language: { contains: codeTemplate.toLowerCase() } },
+              ],
             },
           },
         });
@@ -248,8 +244,7 @@ export default async function handler(req, res) {
           .map((tag) => tag.trim())
           .filter((tag) => tag);
       
-        if (!where.AND) where.AND = [];
-        where.AND.push({
+          additionalFilters.push({
           AND: tags.map((tag) => ({
             tags: {
               some: {
@@ -262,6 +257,12 @@ export default async function handler(req, res) {
         });
       }
 
+      if (additionalFilters.length > 0) {
+        where = {
+          AND: [where, ...additionalFilters],
+        };
+      }
+      
       // Fetch results from the database based on the 'where' condition
       let results = await prisma.blogPost.findMany({
         where,
@@ -311,6 +312,7 @@ export default async function handler(req, res) {
       console.error(error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
+    })
   } else {
     return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
