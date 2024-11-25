@@ -98,7 +98,7 @@ export default function Coding() {
     if (res.status === 200) {
       toast.success("Fork Successful!")
       const encryptedId = window.btoa(res.data.template.id)
-      window.location.href = "/code-template?id=" + encryptedId
+      router.push("/code-template?id=" + encryptedId)
     } else if (res.status === 201)  {
       toast.success("Fork Successful!")
       const encryptedId = window.btoa(res.data.template.id)
@@ -217,7 +217,7 @@ export default function Coding() {
         }
         
     }
-  }, [router.isReady]);
+  }, [router]);
 
   const forkAlert = () =>  {
     confirmAlert({
@@ -306,7 +306,8 @@ export default function Coding() {
                 {!(parentId === "") && (
                   <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
                     <h1 className="text-sm lg:text-base font-semibold">Parent Template:</h1>
-                    <a href={`/code-template?id=${parentId}`}>Link</a>
+                    <a className="text-blue-500 hover:text-blue-700 underline text-xs lg:text-sm"
+                      href={`/code-template?id=${parentId}`}>Link</a>
                   </div>
                 )}
               </div>
