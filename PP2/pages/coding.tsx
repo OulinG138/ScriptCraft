@@ -46,7 +46,13 @@ export default function Coding() {
     const reqBody = {content: code, language: language, input: input}
     setIsExecuting(true)
     let res = await API.code.execute(reqBody)
-    setStdout(res.data.stdout.replace(
+    var out = null
+    if (res.status === 203) {
+      out = res.data.error
+    } else  {
+      out = res.data.stdout
+    }
+    setStdout(out.replace(
       /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''))
     if (res.status === 201) {
       toast.error("Execution Successful but Timed Out")

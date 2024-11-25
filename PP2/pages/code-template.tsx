@@ -54,16 +54,23 @@ export default function Coding() {
   const router = useRouter();
 
   const execute = async () =>    {
-    const reqBody = {content: code, language: language, input: input};
-    setIsExecuting(true);
-    let res = await API.code.execute(reqBody);
-    setStdout(res.data.stdout);
-    if (res.status === 201) {
-      toast.error("Execution Successful but Timed Out");
+    const reqBody = {content: code, language: language, input: input}
+    setIsExecuting(true)
+    let res = await API.code.execute(reqBody)
+    var out = null
+    if (res.status === 203) {
+      out = res.data.error
+    } else  {
+      out = res.data.stdout
     }
-    setIsExecuting(false);
+    setStdout(out.replace(
+      /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''))
+    if (res.status === 201) {
+      toast.error("Execution Successful but Timed Out")
+    }
+    setIsExecuting(false)
   }
-
+  
   const triggerSave = async () =>   {
       setIsSaving(true);
       setMessage("Saving Changes...")
@@ -86,7 +93,7 @@ export default function Coding() {
     if (res.status === 200) {
       toast.success("Fork Successful!")
       const encryptedId = window.btoa(res.data.template.id)
-      router.push("/code-template?id=" + encryptedId)
+      window.location.href = "/code-template?id=" + encryptedId
     } else if (res.status === 201)  {
       toast.success("Fork Successful!")
       const encryptedId = window.btoa(res.data.template.id)
