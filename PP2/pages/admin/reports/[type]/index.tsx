@@ -131,6 +131,7 @@ const AdminReportsPage: React.FC = () => {
   }, [type, sortOrder, page, limit]);
 
   const handleTabChange = (newType: "comments" | "posts") => {
+    setPage(1);
     router.push({
       pathname: `/admin/reports/${newType}`,
       query: { page: 1, limit, sort: sortOrder },
