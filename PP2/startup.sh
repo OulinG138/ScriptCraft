@@ -54,8 +54,7 @@ else
   echo "docker is already installed."
 fi
 
-sudo dockerd &
-
+sudo service docker start
 create_docker_images
 
 # Install Prisma dependencies
