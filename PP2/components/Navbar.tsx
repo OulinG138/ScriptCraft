@@ -34,9 +34,6 @@ const NavbarContent = () => {
   const navLinks = [
     { text: "Blog Posts", href: "/posts" },
     { text: "Code Templates", href: "/code-templates" },
-    { text: "About", href: "/about" },
-    { text: "Contact", href: "/contact" },
-    { text: "Help", href: "/help" },
     ...(auth.user?.isAdmin
       ? [{ text: "Reports", href: "/admin/reports/comments" }]
       : []),
@@ -202,15 +199,12 @@ const NavbarContent = () => {
               <ListItem component={Link} href="/profile">
                 <ListItemText primary="Profile" />
               </ListItem>
-
               <ListItem component={Link} href="/user/posts">
-              <ListItemText primary="User Posts" />
+                <ListItemText primary="My Posts" />
               </ListItem>
-
               <ListItem component={Link} href="/user/code-templates">
-              <ListItemText primary="User Code Templates" />
+                <ListItemText primary="My Code Templates" />
               </ListItem>
-
               <ListItem
                 onClick={() => {
                   logout();
@@ -241,8 +235,10 @@ const NavbarContent = () => {
       >
         <MenuItem onClick={() => router.push("/profile")}>Profile</MenuItem>
 
-        <MenuItem onClick={() => router.push("/user/posts")}>User Posts</MenuItem>
-        <MenuItem onClick={() => router.push("/user/code-templates")}>User Code Templates</MenuItem>
+        <MenuItem onClick={() => router.push("/user/posts")}>My Posts</MenuItem>
+        <MenuItem onClick={() => router.push("/user/code-templates")}>
+          My Code Templates
+        </MenuItem>
 
         <MenuItem
           onClick={() => {

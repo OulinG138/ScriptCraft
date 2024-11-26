@@ -374,7 +374,7 @@ const PostDetailPage = () => {
   else 
   return (
     <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', margin: '0 auto', mt: 8, p: 2}}>
-      <Box sx={{mt: 1}}>
+      <Box sx={{mt: 1, ml: 2}}>
       <Button variant="contained" sx={{justifyContent: 'flex-end'}}onClick={() => router.back()}>Back</Button>
       </Box>
     <Container sx={{m:0}}>

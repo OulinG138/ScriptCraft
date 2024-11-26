@@ -32,7 +32,7 @@ const RatingsButtons = ({isVoting, userId, targetType, element, onReport, onVote
             variant="text" 
             size={targetType === "comment" ? "small" : "medium"}
             color="error" 
-            onClick={() => onReport("post", element.id)}
+            onClick={() => onReport(targetType, element.id)}
             >
             Report
         </Button>
