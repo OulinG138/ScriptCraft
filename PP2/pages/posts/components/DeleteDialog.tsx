@@ -80,7 +80,7 @@ const DeleteDialog = ({
         try {
             await API.blogpost.deleteBlogPost(auth.accessToken as string, target.id);
             setOpenDeleteDialog(false);
-            router.push('/404')
+            router.back()
         } catch (error) {
             console.log(error)
         }
