@@ -1,19 +1,30 @@
-import { authAxiosInstance, getJWTHeader } from "../Axios";
+import axios, { authAxiosInstance, getJWTHeader } from "../Axios";
 
 const routers = {
-  getBlogPost: async(accessToken: string | undefined, postId: Number) => {
+  getBlogPost: async (accessToken: string | undefined, postId: Number) => {
     if (accessToken) {
-      return authAxiosInstance.get(`/posts/${postId}`, getJWTHeader(accessToken));
+      return authAxiosInstance.get(
+        `/posts/${postId}`,
+        getJWTHeader(accessToken)
+      );
     } else {
-      return authAxiosInstance.get(`/posts/${postId}/visitor`);
-    }},
+      return axios.get(`/posts/${postId}/visitor`);
+    }
+  },
   postBlogPost: async (accessToken: string, payload: object) =>
     authAxiosInstance.post("/posts", payload, getJWTHeader(accessToken)),
-  updateBlogPost: async (accessToken: string, postId: number, payload: object) =>
-    authAxiosInstance.put(`/posts/${postId}`, payload, getJWTHeader(accessToken)),
+  updateBlogPost: async (
+    accessToken: string,
+    postId: number,
+    payload: object
+  ) =>
+    authAxiosInstance.put(
+      `/posts/${postId}`,
+      payload,
+      getJWTHeader(accessToken)
+    ),
   deleteBlogPost: async (accessToken: string, postId: number) =>
-    authAxiosInstance.delete(`/posts/${postId}`,getJWTHeader(accessToken)),
-  
+    authAxiosInstance.delete(`/posts/${postId}`, getJWTHeader(accessToken)),
 
   getPaginatedBlogPosts: async (
     accessToken: string | undefined,
@@ -26,7 +37,9 @@ const routers = {
     limit: number
   ) => {
     const queryParams: Record<string, string> = {
-      title, content, codeTemplate,
+      title,
+      content,
+      codeTemplate,
       searchTags: tags.join(", "),
       sortBy,
       page: page.toString(),
@@ -34,9 +47,12 @@ const routers = {
     };
     const queryString = new URLSearchParams(queryParams).toString();
     if (accessToken) {
-      return authAxiosInstance.get(`/posts?${queryString}`, getJWTHeader(accessToken));
+      return authAxiosInstance.get(
+        `/posts?${queryString}`,
+        getJWTHeader(accessToken)
+      );
     } else {
-      return authAxiosInstance.get(`/posts/visitor?${queryString}`);
+      return axios.get(`/posts/visitor?${queryString}`);
     }
   },
   getUserBlogPosts: async (
@@ -50,17 +66,21 @@ const routers = {
     limit: number
   ) => {
     const queryParams: Record<string, string> = {
-      title, content, codeTemplate,
+      title,
+      content,
+      codeTemplate,
       searchTags: tags.join(", "),
       sortBy,
       page: page.toString(),
       limit: limit.toString(),
     };
     const queryString = new URLSearchParams(queryParams).toString();
-    return authAxiosInstance.get(`/user/posts?${queryString}`, getJWTHeader(accessToken));
+    return authAxiosInstance.get(
+      `/user/posts?${queryString}`,
+      getJWTHeader(accessToken)
+    );
   },
 
-  
   getPaginatedComments: async (
     accessToken: string | undefined,
     postId: Number,
@@ -75,9 +95,12 @@ const routers = {
     };
     const queryString = new URLSearchParams(queryParams).toString();
     if (accessToken) {
-      return authAxiosInstance.get(`/posts/${postId}/comments/?${queryString}`, getJWTHeader(accessToken));
+      return authAxiosInstance.get(
+        `/posts/${postId}/comments/?${queryString}`,
+        getJWTHeader(accessToken)
+      );
     } else {
-      return authAxiosInstance.get(`/posts/${postId}/comments/visitor?${queryString}`);
+      return axios.get(`/posts/${postId}/comments/visitor?${queryString}`);
     }
   },
   getPaginatedReplies: async (
@@ -92,31 +115,47 @@ const routers = {
     };
     const queryString = new URLSearchParams(queryParams).toString();
     if (accessToken) {
-      return authAxiosInstance.get(`/comments/${commentId}/replies?${queryString}`, getJWTHeader(accessToken));
+      return authAxiosInstance.get(
+        `/comments/${commentId}/replies?${queryString}`,
+        getJWTHeader(accessToken)
+      );
     } else {
-      return authAxiosInstance.get(`/comments/${commentId}/replies/visitor?${queryString}`);
+      return axios.get(`/comments/${commentId}/replies/visitor?${queryString}`);
     }
   },
 
-  
   deleteComment: async (accessToken: string, commentId: number) =>
-    authAxiosInstance.delete(`/comment/${commentId}`,getJWTHeader(accessToken)),
-  postComment: async (accessToken: string, postId: Number, payload: object) => 
-    authAxiosInstance.post(`/posts/${postId}/comments`, payload, getJWTHeader(accessToken)),
+    authAxiosInstance.delete(
+      `/comment/${commentId}`,
+      getJWTHeader(accessToken)
+    ),
+  postComment: async (accessToken: string, postId: Number, payload: object) =>
+    authAxiosInstance.post(
+      `/posts/${postId}/comments`,
+      payload,
+      getJWTHeader(accessToken)
+    ),
 
-  postRating: async (accessToken: string, payload: object) => 
-    authAxiosInstance.post(`/ratings`, payload, getJWTHeader(accessToken)),  
-  deleteRating: async(accessToken: string, ratingId: number) => 
-    authAxiosInstance.delete(`/ratings/${ratingId}`, getJWTHeader(accessToken)), 
-  getRating: async (accessToken: string | undefined, postId: Number, page: Number) => {
+  postRating: async (accessToken: string, payload: object) =>
+    authAxiosInstance.post(`/ratings`, payload, getJWTHeader(accessToken)),
+  deleteRating: async (accessToken: string, ratingId: number) =>
+    authAxiosInstance.delete(`/ratings/${ratingId}`, getJWTHeader(accessToken)),
+  getRating: async (
+    accessToken: string | undefined,
+    postId: Number,
+    page: Number
+  ) => {
     if (accessToken) {
-    authAxiosInstance.get(`/posts/${postId}/ratings`, getJWTHeader(accessToken))
+      authAxiosInstance.get(
+        `/posts/${postId}/ratings`,
+        getJWTHeader(accessToken)
+      );
     } else {
-      authAxiosInstance.get(`/posts/${postId}/ratings`)
-    }},  
-  
-  
-  postReport: async (accessToken: string, payload: object) => 
+      authAxiosInstance.get(`/posts/${postId}/ratings`);
+    }
+  },
+
+  postReport: async (accessToken: string, payload: object) =>
     authAxiosInstance.post(`/reports`, payload, getJWTHeader(accessToken)),
-}
+};
 export default routers;

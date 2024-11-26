@@ -34,9 +34,6 @@ const NavbarContent = () => {
   const navLinks = [
     { text: "Blog Posts", href: "/posts" },
     { text: "Code Templates", href: "/code-templates" },
-    { text: "About", href: "/about" },
-    { text: "Contact", href: "/contact" },
-    { text: "Help", href: "/help" },
     ...(auth.user?.isAdmin
       ? [{ text: "Reports", href: "/admin/reports/comments" }]
       : []),
@@ -232,8 +229,12 @@ const NavbarContent = () => {
       >
         <MenuItem onClick={() => router.push("/profile")}>Profile</MenuItem>
 
-        <MenuItem onClick={() => router.push("/user/posts")}>User Posts</MenuItem>
-        <MenuItem onClick={() => router.push("/user/code-templates")}>User Code Templates</MenuItem>
+        <MenuItem onClick={() => router.push("/user/posts")}>
+          User Posts
+        </MenuItem>
+        <MenuItem onClick={() => router.push("/user/code-templates")}>
+          User Code Templates
+        </MenuItem>
 
         <MenuItem
           onClick={() => {
