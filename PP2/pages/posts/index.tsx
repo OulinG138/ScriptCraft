@@ -1,10 +1,16 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { useRouter } from "next/router";
 
-import { 
-  Typography, Box, Button, Container, Pagination, SelectChangeEvent, CircularProgress
+import {
+  Typography,
+  Box,
+  Button,
+  Container,
+  Pagination,
+  SelectChangeEvent,
+  CircularProgress,
 } from "@mui/material";
-import EditIcon from '@mui/icons-material/Edit';
+import EditIcon from "@mui/icons-material/Edit";
 
 import CreatePostDialog from "./components/CreatePostDialog";
 import SearchBar from "./components/PostsSearchBar";
@@ -29,7 +35,11 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   const [page, setPage] = useState(1);
 
   // search states
-  const [search, setSearch] = useState({title: "", content: "", codeTemplate: ""});
+  const [search, setSearch] = useState({
+    title: "",
+    content: "",
+    codeTemplate: "",
+  });
   const [searchTags, setSearchTags] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("ratings");
@@ -43,11 +53,11 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     content: "",
     tags: [] as string[],
     codeTemplateLinks: [] as string[],
-    codeTemplateIds: [] as number[]
+    codeTemplateIds: [] as number[],
   });
 
   // snackbar alert states
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarMessage, setSnackbarMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
   // post handlers
@@ -59,11 +69,13 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
         if (!auth.accessToken) {
           setSnackbarMessage("Error: Please log out and try again");
           setOpenSnackbar(false);
-          return
+          return;
         }
         response = await API.blogpost.getUserBlogPosts(
           auth.accessToken,
-          search.title, search.content, search.codeTemplate,
+          search.title,
+          search.content,
+          search.codeTemplate,
           tags,
           sortBy,
           page,
@@ -74,7 +86,9 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       } else {
         response = await API.blogpost.getPaginatedBlogPosts(
           auth.accessToken,
-          search.title, search.content, search.codeTemplate,
+          search.title,
+          search.content,
+          search.codeTemplate,
           tags,
           sortBy,
           page,
@@ -95,7 +109,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     setPostsPerPage(Number(event.target.value));
     setPage(1);
   };
-  
+
   const handlePageChange = (_: ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
@@ -118,7 +132,9 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     fetchPosts();
   };
 
-  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearchKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (event.key === "Enter") {
       handleSearchClick();
     }
@@ -129,16 +145,26 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     if (auth.user) {
       setCreatePostDialogOpen(true);
     } else {
-      router.push('/login');
+      router.push("/login");
     }
   };
 
   const closeCreatePostDialog = () => {
     setCreatePostDialogOpen(false);
-    setNewPost({ title: "", description: "", content: "", tags: [], codeTemplateLinks: [], codeTemplateIds: []});
+    setNewPost({
+      title: "",
+      description: "",
+      content: "",
+      tags: [],
+      codeTemplateLinks: [],
+      codeTemplateIds: [],
+    });
   };
 
-  const handleCreatePostChange = (field: string, value: string | string[] | number[]) => {
+  const handleCreatePostChange = (
+    field: string,
+    value: string | string[] | number[]
+  ) => {
     setNewPost((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -153,8 +179,8 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
         setSearchTags("");
       }
     }
-  };  
-  
+  };
+
   const handleTagDelete = (tagToDelete: string) => {
     setTags((prevTags) => prevTags.filter((tag) => tag !== tagToDelete));
   };
@@ -165,14 +191,14 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       setOpenSnackbar(true);
       return;
     }
-  
+
     if (!auth.accessToken) {
       console.error("Access token is missing");
       setSnackbarMessage("Error: Login again and retry");
       setOpenSnackbar(true);
       return;
     }
-  
+
     try {
       await API.blogpost.postBlogPost(auth.accessToken, newPost);
       closeCreatePostDialog();
@@ -195,8 +221,12 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   // Load state from sessionStorage once mounted
   useEffect(() => {
     if (mounted) {
-      const savedState = JSON.parse(sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
-      setSearch(savedState.search || {title: "", content: "", codeTemplate: ""});
+      const savedState = JSON.parse(
+        sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
+      );
+      setSearch(
+        savedState.search || { title: "", content: "", codeTemplate: "" }
+      );
       setTags(savedState.tags || []);
       setSortBy(savedState.sortBy || "ratings");
       setPage(savedState.page || 1);
@@ -207,7 +237,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   // Save state to sessionStorage whenever it changes
   useEffect(() => {
     if (mounted) {
-      console.log('saving..', search)
+      console.log("saving..", search);
       sessionStorage.setItem(
         LOCAL_STORAGE_KEY,
         JSON.stringify({ search, tags, sortBy, page, postsPerPage })
@@ -219,23 +249,38 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   if (!mounted) {
     return <CircularProgress />;
   }
-  
+
   return (
     <Container sx={{ mb: 5, mt: 5 }}>
-      <Box sx={{display: "flex", flexDirection: "row"}}> 
-        <Typography variant="h4" className="pb-5" sx={{whiteSpace: 'nowrap', width:'auto'}}>{user ? "User Blog Posts" : "Blog Posts"} </Typography>
+      <Box sx={{ display: "flex", flexDirection: "row" }}>
+        <Typography
+          variant="h4"
+          className="pb-5"
+          sx={{ whiteSpace: "nowrap", width: "auto" }}
+        >
+          {user ? "My Blog Posts" : "Blog Posts"}{" "}
+        </Typography>
 
-        {auth &&
-        <Box sx={{ height: "100%", display: 'flex', width: { xs: '100%', sm: '100%', md: 'auto'}, flexGrow: { md: 1, xs: 0, sm: 0}, justifyContent: 'flex-end'  }}>
-          <Button
-            variant="contained"
-            onClick={openCreatePostDialog}
-            sx={{whiteSpace: 'nowrap', width:'auto'}}
+        {auth && (
+          <Box
+            sx={{
+              height: "100%",
+              display: "flex",
+              width: { xs: "100%", sm: "100%", md: "auto" },
+              flexGrow: { md: 1, xs: 0, sm: 0 },
+              justifyContent: "flex-end",
+            }}
           >
-            <EditIcon sx={{ pr: 1}}> </EditIcon>
-            Create Post
-          </Button>
-        </Box>}
+            <Button
+              variant="contained"
+              onClick={openCreatePostDialog}
+              sx={{ whiteSpace: "nowrap", width: "auto" }}
+            >
+              <EditIcon sx={{ pr: 1 }}> </EditIcon>
+              Create Post
+            </Button>
+          </Box>
+        )}
       </Box>
 
       <SearchBar
@@ -256,20 +301,24 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       />
 
       <Box className="mt-5">
-        <PostList isLoading={isLoading} posts={posts} onPostClick={handlePostClick}/>
+        <PostList
+          isLoading={isLoading}
+          posts={posts}
+          onPostClick={handlePostClick}
+        />
       </Box>
-      {posts.length > 0 &&
+      {posts.length > 0 && (
         <Pagination
-        sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}
-        count={Math.ceil(totalPosts / postsPerPage)}
-        page={page}
-        onChange={handlePageChange}
-        color="primary"
-      />
-      }
+          sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}
+          count={Math.ceil(totalPosts / postsPerPage)}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+        />
+      )}
 
-      {createPostDialogOpen &&
-        <CreatePostDialog 
+      {createPostDialogOpen && (
+        <CreatePostDialog
           dialogType="create"
           open={createPostDialogOpen}
           post={newPost}
@@ -277,9 +326,13 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
           onChange={handleCreatePostChange}
           onSubmit={handleCreatePostSubmit}
         />
-      }
-      
-      <Alert message={snackbarMessage} openSnackbar={openSnackbar} setOpenSnackbar={setOpenSnackbar} />
+      )}
+
+      <Alert
+        message={snackbarMessage}
+        openSnackbar={openSnackbar}
+        setOpenSnackbar={setOpenSnackbar}
+      />
     </Container>
   );
 };

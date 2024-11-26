@@ -1,8 +1,14 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
-import { 
-  Box, Button, Typography, Container, Pagination, SelectChangeEvent, CircularProgress
+import {
+  Box,
+  Button,
+  Typography,
+  Container,
+  Pagination,
+  SelectChangeEvent,
+  CircularProgress,
 } from "@mui/material";
-import EditIcon from '@mui/icons-material/Edit';
+import EditIcon from "@mui/icons-material/Edit";
 import { useRouter } from "next/router";
 import TemplateList from "./components/TemplateList";
 import TemplatesSearchBar from "./components/TemplatesSearchBar";
@@ -12,21 +18,23 @@ import API from "@/routes/API";
 import Alert from "../../components/Alert";
 
 interface Post {
-  id: number,
-  title: string,
-  explanation: string,
-  codeContent: string,
-  language: string,
-  authorId: string,
-  parentTemplateId: number,
-  tags: [{id: number, name: string}],
-  author: {firstName: string, lastName: string},
-  createdAt: Date,
-  updatedAt: Date
+  id: number;
+  title: string;
+  explanation: string;
+  codeContent: string;
+  language: string;
+  authorId: string;
+  parentTemplateId: number;
+  tags: [{ id: number; name: string }];
+  author: { firstName: string; lastName: string };
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const TemplatesPage = ({ user = false }: { user?: boolean }) => {
-  const LOCAL_STORAGE_KEY = user ? "userTemplateSearchState" : "templateSearchState";
+  const LOCAL_STORAGE_KEY = user
+    ? "userTemplateSearchState"
+    : "templateSearchState";
 
   // basic router and authentication
   const router = useRouter();
@@ -39,14 +47,14 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   const [page, setPage] = useState(1);
 
   // search states
-  const [search, setSearch] = useState({ title: "", explanation: ""});
+  const [search, setSearch] = useState({ title: "", explanation: "" });
   const [searchTags, setSearchTags] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("ratings");
   const [postsPerPage, setPostsPerPage] = useState(5);
 
   // snackbar alert states
-  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarMessage, setSnackbarMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
   // post handlers
@@ -58,11 +66,12 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
         if (!auth.accessToken) {
           setSnackbarMessage("Error: Please log out and try again");
           setOpenSnackbar(false);
-          return
+          return;
         }
         response = await API.code.getUserTemplates(
           auth.accessToken,
-          search.title, search.explanation,
+          search.title,
+          search.explanation,
           tags,
           page,
           postsPerPage
@@ -72,7 +81,8 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
       } else {
         response = await API.code.getPaginatedTemplates(
           auth.accessToken,
-          search.title, search.explanation,
+          search.title,
+          search.explanation,
           tags,
           page,
           postsPerPage
@@ -88,7 +98,6 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     }
   };
 
-
   const handleTagsKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (["Enter", " ", ","].includes(event.key)) {
       event.preventDefault();
@@ -100,8 +109,8 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
         setSearchTags("");
       }
     }
-  };  
-  
+  };
+
   const handleTagDelete = (tagToDelete: string) => {
     setTags((prevTags) => prevTags.filter((tag) => tag !== tagToDelete));
   };
@@ -110,7 +119,7 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     setPostsPerPage(Number(event.target.value));
     setPage(1);
   };
-  
+
   const handlePageChange = (_: ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
@@ -133,7 +142,9 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     fetchPosts();
   };
 
-  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSearchKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (event.key === "Enter") {
       handleSearchClick();
     }
@@ -148,8 +159,10 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   // Load state from sessionStorage once mounted
   useEffect(() => {
     if (mounted) {
-      const savedState = JSON.parse(sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
-      setSearch(savedState.search || { title: "", explanation: ""});
+      const savedState = JSON.parse(
+        sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
+      );
+      setSearch(savedState.search || { title: "", explanation: "" });
       setTags(savedState.tags || []);
       setSortBy(savedState.sortBy || "ratings");
       setPage(savedState.page || 1);
@@ -173,21 +186,36 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   }
 
   return (
-    <Container sx={{ mb: 5, mt: 5}}>
-      <Box sx={{display: "flex", flexDirection: "row"}}> 
-        <Typography variant="h4" className="pb-5" sx={{whiteSpace: 'nowrap', width:'auto'}}>{user ? "User Code Templates" : "Code Templates"} </Typography>
+    <Container sx={{ mb: 5, mt: 5 }}>
+      <Box sx={{ display: "flex", flexDirection: "row" }}>
+        <Typography
+          variant="h4"
+          className="pb-5"
+          sx={{ whiteSpace: "nowrap", width: "auto" }}
+        >
+          {user ? "My Code Templates" : "Code Templates"}{" "}
+        </Typography>
 
-        {auth &&
-        <Box sx={{ height: "100%", display: 'flex', width: { xs: '100%', sm: '100%', md: 'auto'}, flexGrow: { md: 1, xs: 0, sm: 0}, justifyContent: 'flex-end'  }}>
-          <Button
-            variant="contained"
-            onClick={()=> router.push('/coding')}
-            sx={{whiteSpace: 'nowrap', width:'auto'}}
+        {auth && (
+          <Box
+            sx={{
+              height: "100%",
+              display: "flex",
+              width: { xs: "100%", sm: "100%", md: "auto" },
+              flexGrow: { md: 1, xs: 0, sm: 0 },
+              justifyContent: "flex-end",
+            }}
           >
-            <EditIcon sx={{ pr: 1}}> </EditIcon>
-            Create Template
-          </Button>
-        </Box>}
+            <Button
+              variant="contained"
+              onClick={() => router.push("/coding")}
+              sx={{ whiteSpace: "nowrap", width: "auto" }}
+            >
+              <EditIcon sx={{ pr: 1 }}> </EditIcon>
+              Create Template
+            </Button>
+          </Box>
+        )}
       </Box>
 
       <TemplatesSearchBar
@@ -208,20 +236,28 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
       />
 
       <Box className="mt-5">
-        <TemplateList isLoading={isLoading} posts={posts} onPostClick={handlePostClick}/>
+        <TemplateList
+          isLoading={isLoading}
+          posts={posts}
+          onPostClick={handlePostClick}
+        />
       </Box>
 
-      {posts.length > 0 &&
+      {posts.length > 0 && (
         <Pagination
-        sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}
-        count={Math.ceil(totalPosts / postsPerPage)}
-        page={page}
-        onChange={handlePageChange}
-        color="primary"
-      />
-      }
+          sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}
+          count={Math.ceil(totalPosts / postsPerPage)}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+        />
+      )}
 
-      <Alert message={snackbarMessage} openSnackbar={openSnackbar} setOpenSnackbar={setOpenSnackbar} />
+      <Alert
+        message={snackbarMessage}
+        openSnackbar={openSnackbar}
+        setOpenSnackbar={setOpenSnackbar}
+      />
     </Container>
   );
 };

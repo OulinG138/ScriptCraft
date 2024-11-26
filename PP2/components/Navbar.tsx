@@ -199,6 +199,12 @@ const NavbarContent = () => {
               <ListItem component={Link} href="/profile">
                 <ListItemText primary="Profile" />
               </ListItem>
+              <ListItem component={Link} href="/user/posts">
+                <ListItemText primary="My Posts" />
+              </ListItem>
+              <ListItem component={Link} href="/user/code-templates">
+                <ListItemText primary="My Code Templates" />
+              </ListItem>
               <ListItem
                 onClick={() => {
                   logout();
@@ -229,11 +235,9 @@ const NavbarContent = () => {
       >
         <MenuItem onClick={() => router.push("/profile")}>Profile</MenuItem>
 
-        <MenuItem onClick={() => router.push("/user/posts")}>
-          User Posts
-        </MenuItem>
+        <MenuItem onClick={() => router.push("/user/posts")}>My Posts</MenuItem>
         <MenuItem onClick={() => router.push("/user/code-templates")}>
-          User Code Templates
+          My Code Templates
         </MenuItem>
 
         <MenuItem
