@@ -679,7 +679,6 @@ const PostDetailPage = () => {
     <Alert message={snackbarMessage} openSnackbar={openSnackbar} setOpenSnackbar={setOpenSnackbar} />
 
     </Container>
-    </Box >
   )
 };
 
