@@ -16,8 +16,15 @@ import{
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  Tab,
   TextField,
+  Typography,
 } from "@mui/material";
+import { TabContext, TabList, TabPanel } from "@mui/lab";
 
 const languages = [
     "python",
@@ -48,6 +55,7 @@ export default function Coding() {
   const [inputToggle, setInputting] = useState(true)
   const [dialogueToggle, setDialogue] = useState(false)
   const [dialogErrorToggle, setDialogueError] = useState(false)
+  const [tab, setTab] = React.useState('1');
 
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState("");
@@ -144,9 +152,9 @@ export default function Coding() {
     setDetail(!detailToggle);
   }
 
-  const toggleInputting = () =>    {
-    setInputting(!inputToggle);
-  }
+  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
+    setTab(newValue);
+  };
 
   const toggleDialogue = () =>    {
     setTempTags(tags)
@@ -275,7 +283,7 @@ export default function Coding() {
             maxWidth="sm"
             fullWidth
           >
-            <DialogTitle id="customized-dialog-title" onClose={toggleDialogue}>
+            <DialogTitle>
               Edit Information:
             </DialogTitle>
             <DialogContent dividers>
@@ -309,7 +317,7 @@ export default function Coding() {
               <Box mb={2} display="flex" alignItems="center" gap={2}>
                 <TextField
                   id="outlined-controlled"
-                  label="New Tag"
+                  label="Enter a Tag"
                   variant="outlined"
                   size="small"
                   value={newTag}
@@ -482,63 +490,92 @@ export default function Coding() {
       )}
 
       <div className="flex flex-col sm:flex-row flex-grow overflow-hidden p-2 sm:p-4 space-y-2 sm:space-y-0 sm:space-x-4">
-        <div className="flex flex-col flex-grow bg-white shadow-lg rounded overflow-hidden w-full sm:w-4/5">
-          <div className="flex flex-row items-center justify-between bg-gray-100 p-2 sm:p-3 border-b border-gray-300">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm sm:text-md font-semibold"> 
-                {inputToggle ? "Code" : "Input"}
-              </span>
-              <select
-                onChange={(e) => setLanguage(e.target.value)}
-                className="bg-gray-200 border border-gray-300 rounded px-2 py-1 sm:px-4 sm:py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-24 sm:w-auto"
-              >
-                {languages.map((language) => (
-                  <option key={language} value={language}>
-                    {language}
-                  </option>
-                ))}
-              </select>
-            </div>
 
-            <div className="ml-auto flex space-x-2">
-              <button
-                onClick={toggleInputting}
-                className="bg-purple-600 text-white px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm rounded hover:bg-purple-700"
-              >
-                {inputToggle ? "Switch to Input" : "Switch to Code"}
-              </button>
-              <button
-                onClick={execute}
-                className="bg-green-500 text-white px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm rounded hover:bg-green-600"
-              >
-                Execute
-              </button>
-            </div>
-          </div>
+        <div className="flex flex-col flex-grow bg-white shadow-lg rounded overflow-hidden w-full sm:w-4/5 h-full">
+          <Box sx={{ width: '100%', typography: 'body1', height: '100%' }}
+              className="bg-gray-100 border-b border-gray-300 shadow">
+            <TabContext value={tab}>
+              <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                <TabList onChange={handleChange} aria-label="lab API tabs example">
+                  <Tab label="Code Editor" value="1" />
+                  <Tab label="stdin" value="2" />
+                </TabList>
+              </Box>
 
-          <div className="flex-grow">
-            {inputToggle ? (
-              <Editor
-                options={{readOnly: !isOwner}}
-                value={code}
-                onChange={(value) => setCode(value || "")}
-                className="w-full h-full border-none focus:outline-none"
-                language={language}
-                theme="vs-dark"
-              />
-            ) : (
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="w-full h-full resize-none bg-gray-800 text-gray-200 border-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            )}
-          </div>
+              <div className="flex flex-row items-center justify-between bg-gray-100 p-2 sm:p-3 border-b border-gray-300">
+                <div className="flex items-center space-x-2">
+                  <FormControl variant="filled" sx={{ minWidth: 120, maxHeight: 50}}>
+                    <InputLabel id="demo-simple-select-filled-label">Language</InputLabel>
+                      <Select
+                      labelId="demo-simple-select-filled-label"
+                      onChange={(e) => setLanguage(e.target.value as string)}
+                      defaultValue={"python"}
+                    >
+                      {languages.map((language) => (
+                        <MenuItem key={language} value={language}>
+                          {language}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </div>
+
+                <div className="ml-auto flex space-x-2">
+                  <Button
+                      variant="contained"
+                      onClick={() => {(!auth.user) ? toast.error("Only Users May Create Code Templates") : toggleDialogue()}}
+                      className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm sm:text-base"
+                    >
+                      Save As
+                  </Button>
+                
+                  <Button
+                    variant="contained"
+                    onClick={execute}
+                    className="bg-green-500 text-white px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm rounded hover:bg-green-600"
+                  >
+                    Execute
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex-grow flex overflow-hidden h-full">
+                <TabPanel value="1" className="w-full h-full p-0">
+                  <div className="w-full h-full">
+                    <Editor
+                      value={code}
+                      onChange={(value) => setCode(value || "")}
+                      className="w-full h-full border-none focus:outline-none"
+                      language={language}
+                      theme="vs-dark"
+                    />
+                  </div>
+                </TabPanel>
+                <TabPanel value="2" className="w-full h-full p-0">
+                  <div 
+                    className="w-full h-full overflow-hidden" 
+                    style={{ position: "relative" }}
+                  >
+                    <textarea
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      className="w-full h-full resize-none bg-gray-800 text-gray-200 border-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      style={{
+                        overflow: 'auto',
+                        boxSizing: 'border-box',
+                        padding: '8px',
+                      }}
+                    />
+                  </div>
+                </TabPanel>
+              </div>
+            </TabContext>
+          </Box>
         </div>
 
         <div className="flex flex-col bg-white shadow-lg rounded overflow-hidden w-full sm:w-1/5 sm:h-auto sm:self-stretch">
           <div className="bg-gray-100 p-2 sm:p-3 border-b border-gray-300">
-            <span className="text-sm sm:text-md font-semibold">stdout</span>
+            <Typography className="text-sm sm:text-lg font-semibold">stdout</Typography>
           </div>
           {isExecuting && (
             <div className="flex justify-center items-center p-2 bg-green-500 space-x-2">
