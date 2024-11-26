@@ -9,7 +9,14 @@ import { confirmAlert } from 'react-confirm-alert';
 import 'react-confirm-alert/src/react-confirm-alert.css';
 
 import{
-  Button
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
 } from "@mui/material";
 
 const languages = [
@@ -37,9 +44,10 @@ export default function Coding() {
 
   const [savingMessage, setMessage] = useState("")
 
-  const [editingToggle, setEditing] = useState(false)
   const [detailToggle, setDetail] = useState(true)
   const [inputToggle, setInputting] = useState(true)
+  const [dialogueToggle, setDialogue] = useState(false)
+  const [dialogErrorToggle, setDialogueError] = useState(false)
 
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState("");
@@ -51,7 +59,7 @@ export default function Coding() {
   const [id, setId] = useState(-1);
 
   const [tags, setTags] = useState<string[]>([])
-  const [selectTag, setCurrTag] = useState("")
+  const [tempTags, setTempTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
 
   const { auth } = useAuth();
@@ -62,7 +70,6 @@ export default function Coding() {
     setIsExecuting(true)
     let res = await API.code.execute(reqBody)
     var out = null
-    
     out = res.data.stdout
     
     setStdout(out.replace(
@@ -73,18 +80,32 @@ export default function Coding() {
     setIsExecuting(false)
   }
 
-  const triggerSave = async () =>   {
+  const triggerSave = async (event: React.FormEvent<HTMLFormElement>) =>   {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+
+      if (!data.get("title") || !data.get("desc"))  {
+        setDialogueError(true)
+        return;
+      }
+      setDialogueError(false)
       setIsSaving(true);
       setMessage("Saving Changes...")
-      const reqBody = { title: title, explanation: desc, codeContent: code, language: language, tags: tags};
+
+      const reqBody = { title: data.get("title"), explanation: data.get("desc"), codeContent: code, language: language, tags: tempTags};
       const res = await API.code.editTemplate(id, reqBody,  _.get(auth, "accessToken", ""))
 
       if (res.status === 200) {
         toast.success("Changes Successfully Saved")
-        setUpdated(res.data.result.updatedAt.split("T")[0] + " at " + res.data.result.updatedAt.split("T")[1].split(".")[0])
+        const encryptedId = router.query.id
+        const id = window.atob((typeof(encryptedId) === "string") ? encryptedId : "")
+
+
+        fillTemplate(parseInt(id))
       } else  {
         toast.error(res.data.message)
       }
+      toggleDialogue()
       setIsSaving(false);
   }
 
@@ -123,41 +144,32 @@ export default function Coding() {
     setDetail(!detailToggle);
   }
 
-  const toggleEditing = () =>    {
-    setEditing(!editingToggle);
-  }
-
   const toggleInputting = () =>    {
     setInputting(!inputToggle);
   }
 
+  const toggleDialogue = () =>    {
+    setTempTags(tags)
+    setDialogue(!dialogueToggle);
+  }
+
   const addTag = () =>  {
-      var exists = tags.indexOf(newTag) > -1
+      var exists = tempTags.indexOf(newTag) > -1
       if (exists) {
         toast.error("Tag Already Added")
       } else  {
-        var orig = tags;
+        var orig = tempTags;
         var updatedTags = orig.concat([newTag]);
     
-        if (tags.length === 0)  {
-          setCurrTag(newTag)
-        }
-        setTags(updatedTags);
+        setNewTag("")
+        setTempTags(updatedTags);
       }
-      setNewTag("");
   }
 
   const handleKey = (e: { key: string; }) =>  {
     if (e.key === "Enter") {
       addTag()
     }
-  }
-
-  const deleteTag = () => {
-    var newTags = tags.filter((word) => (!(word === selectTag)));
-    
-    setTags(newTags);
-    setCurrTag(newTags[0])
   }
 
   const fillTemplate = async (id: number) =>    {
@@ -175,9 +187,6 @@ export default function Coding() {
             newTags.push(tag.name)
         });
         setTags(newTags)
-        if(newTags) {
-          setCurrTag(newTags[0])
-        }
 
         setId(data.id)
 
@@ -240,9 +249,117 @@ export default function Coding() {
       ]
     })
   }
-  
+
+  const deleteTag = (tag: string)  =>  {
+    var newTags = tempTags.filter((word) => (!(word === tag)));
+    setTempTags(newTags);
+  }
+
   return (
     <div className="flex flex-col w-full h-screen bg-gray-50 text-gray-900">
+
+      <div className="custom-ui">
+        <Box
+          component="form"
+          noValidate
+          onSubmit={triggerSave}
+          className="space-y-4"
+          maxWidth="lg"
+        >
+          <Dialog
+            disablePortal
+            open={dialogueToggle}
+            onClose={toggleDialogue}
+            aria-labelledby="customized-dialog-title"
+            disableEscapeKeyDown
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle id="customized-dialog-title" onClose={toggleDialogue}>
+              Edit Information:
+            </DialogTitle>
+            <DialogContent dividers>
+              <Box mb={2}>
+                <TextField
+                  required
+                  error={dialogErrorToggle}
+                  id="outlined-required"
+                  helperText={(dialogErrorToggle) ? "Please Fill Field." : ""}
+                  name="title"
+                  label="Title"
+                  variant="filled"
+                  fullWidth
+                  defaultValue={title}
+                />
+              </Box>
+              <Box mb={2}>
+                <TextField
+                  required
+                  error={dialogErrorToggle}
+                  id="standard-multiline-static"
+                  helperText={(dialogErrorToggle) ? "Please Fill Field." : ""}
+                  label="Description"
+                  name="desc"
+                  multiline
+                  rows={4}
+                  fullWidth
+                  defaultValue={desc}
+                />
+              </Box>
+              <Box mb={2} display="flex" alignItems="center" gap={2}>
+                <TextField
+                  id="outlined-controlled"
+                  label="New Tag"
+                  variant="outlined"
+                  size="small"
+                  value={newTag}
+                  onChange={(e) => {setNewTag(e.target.value)}}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleKey(e);
+                    }
+                  }}
+                  style={{ width: '60%' }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={addTag}
+                  className="bg-slate-500 disabled:bg-slate-300 text-white px-6 py-2 rounded hover:bg-slate-600 disabled:hover:bg-slate-300 text-sm lg:text-base"
+                >
+                  Add Tag
+                </Button>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap", 
+                  gap: 1,          
+                }}
+              >
+                {tempTags.map((tag) => (
+                  <Chip
+                    key={tag}
+                    variant="outlined"
+                    label={tag}
+                    onDelete={() => deleteTag(tag)}
+                  />
+                ))}
+              </Box>
+
+            </DialogContent>
+            <DialogActions>
+              <Button autoFocus type="submit" color="primary">
+                Finish
+              </Button>
+              <Button autoFocus onClick={toggleDialogue} color="primary">
+                Cancel
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
+      </div>
 
       <div className="flex items-center p-4 bg-gray-100 border-b border-gray-300 shadow">
         {detailToggle && (
@@ -252,62 +369,35 @@ export default function Coding() {
               
               <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
                 <h1 className="text-sm lg:text-base font-semibold">Title:</h1>
-                {editingToggle && (
-                  <textarea
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="resize-none w-[120px] sm:w-[200px] h-6 sm:h-8 bg-gray-200 text-gray-900 border border-gray-300 rounded p-1 sm:p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                )}
-                {!editingToggle && (
-                  <h1 className="text-sm lg:text-base font-semibold max-w-[200px] md:max-w-[150px] break-words">
-                    {title}
-                  </h1>
-                )}
+                <h1 className="text-sm lg:text-base font-semibold max-w-[200px] md:max-w-[150px] break-words">
+                  {title}
+                </h1>
               </div>
 
-              {editingToggle && (
+              <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                <h1 className="text-sm lg:text-base font-semibold">Author:</h1>
+                <h1 className="text-sm lg:text-base font-semibold">{author}</h1>
+              </div>
+
+              <div className="flex flex-col space-y-4">
                 <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                  <h1 className="text-sm lg:text-base font-semibold">Description:</h1>
-                    <textarea
-                      value={desc}
-                      onChange={(e) => setDesc(e.target.value)}
-                      className="resize-none w-[150px] lg:w-[220px] h-10 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-1 sm:p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  <h1 className="text-sm lg:text-base font-semibold">Created On:</h1>
+                  <h1 className="text-xs lg:text-sm font-semibold">{created}</h1>
                 </div>
-              )}
-
-
-                {!editingToggle && (
+                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+                  <h1 className="text-sm lg:text-base font-semibold">Updated On:</h1>
+                  <h1 className="text-xs lg:text-sm font-semibold">{updated}</h1>
+                </div>
+                {!(parentId === "") && (
                   <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                    <h1 className="text-sm lg:text-base font-semibold">Author:</h1>
-                    <h1 className="text-sm lg:text-base font-semibold">{author}</h1>
+                    <h1 className="text-sm lg:text-base font-semibold">Parent Template:</h1>
+                    <a className="text-blue-500 hover:text-blue-700 underline text-xs lg:text-sm"
+                      href={`/code-template?id=${parentId}`}>Link</a>
                   </div>
                 )}
-
-                
-                {!editingToggle && (
-                  <div className="flex flex-col space-y-4">
-                    <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                      <h1 className="text-sm lg:text-base font-semibold">Created On:</h1>
-                      <h1 className="text-xs lg:text-sm font-semibold">{created}</h1>
-                    </div>
-                    <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                      <h1 className="text-sm lg:text-base font-semibold">Updated On:</h1>
-                      <h1 className="text-xs lg:text-sm font-semibold">{updated}</h1>
-                    </div>
-                    {!(parentId === "") && (
-                      <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                        <h1 className="text-sm lg:text-base font-semibold">Parent Template:</h1>
-                        <a className="text-blue-500 hover:text-blue-700 underline text-xs lg:text-sm"
-                          href={`/code-template?id=${parentId}`}>Link</a>
-                      </div>
-                    )}
-                  </div>
-                )}
+              </div>
             </div>
 
-            {!editingToggle && (
               <div className="flex flex-col space-y-2">
                 <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
                   <h1 className="text-sm lg:text-base font-semibold">Description:</h1>
@@ -320,7 +410,6 @@ export default function Coding() {
 
                     <h1 className="text-sm lg:text-base font-semibold">Tags:</h1>
                     <select
-                      onChange={(e) => setCurrTag(e.target.value)}
                       className="bg-gray-200 border border-gray-300 rounded px-2 py-1 sm:px-4 sm:py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[100px] lg:w-[170px]"
                     >
                       {tags.length === 0 && (
@@ -344,68 +433,6 @@ export default function Coding() {
                     </select>
                   </div>
               </div>
-
-            )}
-
-
-            <div className="flex flex-col sm:items-start items-start space-y-4">
-              {editingToggle && (
-                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-
-                <h1 className="text-sm lg:text-base font-semibold">Tags:</h1>
-                <select
-                  onChange={(e) => setCurrTag(e.target.value)}
-                  className="bg-gray-200 border border-gray-300 rounded px-2 py-1 sm:px-4 sm:py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[100px] lg:w-[170px]"
-                >
-                  {tags.length === 0 && (
-                    <option
-                      key="No Tags"
-                      value="No Tags"
-                      className="bg-gray-200 text-gray-800"
-                    >
-                      No Tags
-                    </option>
-                  )}
-                  {tags.map((tag) => (
-                    <option
-                      key={tag}
-                      value={tag}
-                      className="bg-gray-200 text-gray-800"
-                    >
-                      {tag}
-                    </option>
-                  ))}
-                </select>
-                  <Button
-                    variant="contained"
-                    onClick={deleteTag}
-                    disabled={tags.length === 0}
-                    className="bg-slate-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded text-xs sm:text-sm lg:text-base hover:bg-slate-600 disabled:bg-slate-300 disabled:hover:bg-slate-300"
-                  >
-                    Delete
-                  </Button>
-              </div>
-              )}
-  
-
-              {editingToggle && (
-                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                  <textarea
-                    value={newTag}
-                    onKeyDown={handleKey}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    className="resize-none lg:w-[175px] w-[120px] h-6 sm:h-8 bg-gray-200 text-gray-900 border border-gray-300 rounded p-1 sm:p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    onClick={addTag}
-                    disabled={newTag === ""}
-                    className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-xs lg:text-sm"
-                  >
-                    Add Tag
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         )}
 
@@ -426,10 +453,10 @@ export default function Coding() {
           )}
           {detailToggle && isOwner && (
             <button
-              onClick={toggleEditing}
+              onClick={toggleDialogue}
               className="bg-orange-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-orange-600 text-xs lg:text-sm"
             >
-              {editingToggle ? "Stop Editing" : "Edit"}
+              Edit
             </button>
           )}
           <button
@@ -438,14 +465,6 @@ export default function Coding() {
           >
             {detailToggle ? "Hide Details" : "Show Details"}
           </button>
-          {isOwner && (
-            <button
-              onClick={triggerSave}
-              className="bg-blue-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-blue-600 text-xs lg:text-sm"
-            >
-              Save
-            </button>
-          )}
           <button
             onClick={forkAlert}
             className="bg-green-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-green-600 text-xs lg:text-sm"
@@ -500,7 +519,7 @@ export default function Coding() {
           <div className="flex-grow">
             {inputToggle ? (
               <Editor
-                options={{readOnly: !editingToggle}}
+                options={{readOnly: !isOwner}}
                 value={code}
                 onChange={(value) => setCode(value || "")}
                 className="w-full h-full border-none focus:outline-none"

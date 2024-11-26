@@ -5,6 +5,16 @@ import API from "@/routes/API";
 import toast from "react-hot-toast";
 import _ from "lodash";
 import { useRouter } from "next/router";
+import{
+  Box,
+  Button,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+} from "@mui/material";
 
 
 const languages = [
@@ -27,6 +37,8 @@ export default function Coding() {
 
   const [editorToggle, setEditor] = useState(true)
   const [savingToggle, setSaving] = useState(false)
+  const [dialogueToggle, setDialogue] = useState(false)
+  const [dialogErrorToggle, setDialogueError] = useState(false)
 
   const [language, setLanguage] = useState("python");
   const [code, setCode] = useState("");
@@ -37,7 +49,7 @@ export default function Coding() {
   const [desc, setDesc] = useState("")
 
   const [tags, setTags] = useState<string[]>([])
-  const [selectTag, setCurrTag] = useState("")
+  const [tempTags, setTempTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState("")
 
   const { auth } = useAuth();
@@ -48,9 +60,11 @@ export default function Coding() {
     setIsExecuting(true)
     let res = await API.code.execute(reqBody)
     var out = null
-
-    out = res.data.stdout
-
+    if (res.status === 203) {
+      out = res.data.error
+    } else  {
+      out = res.data.stdout
+    }
     setStdout(out.replace(
       /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''))
     if (res.status === 201) {
@@ -63,60 +77,60 @@ export default function Coding() {
     setSaving(!savingToggle)
   }
 
-  const triggerSave = async () =>   {
-    if (auth.user === undefined) {
-      toast.error("Only Logged in Users can Save")
-    } else {
-      if (savingToggle) {
-        if (title === "" || desc === "") {
-          toast.error("Fields not completed")
-          setIncomplete(true)
-        } else  {
-          setIncomplete(false)
-          setIsSaving(true)
-          const reqBody = { title: title, explanation: desc, codeContent: code, language: language, tags: tags}
-          const res = await API.code.template(reqBody, _.get(auth, "accessToken", ""),)
-          setIsSaving(false)
-  
-          if (res.status === 200) {
-            toast.success("Template Successfully Created")
-            const encryptedId = window.btoa(res.data.template.id)
-            router.push("/code-template?id=" + encryptedId)
-          } else  {
-            toast.error(res.data.message)
-          }
-        }
-      } else   {
-        setSaving(!savingToggle)
-      }
+  const triggerSave = async (event: React.FormEvent<HTMLFormElement>) =>   {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+
+    if (!data.get("title") || !data.get("desc"))  {
+      setDialogueError(true)
+      return;
     }
+
+    setIsSaving(true)
+    const reqBody = { title: data.get("title"), explanation: data.get("desc"), codeContent: code, language: language, tags: tags}
+    const res = await API.code.template(reqBody, _.get(auth, "accessToken", ""),)
+    setIsSaving(false)
+  
+    if (res.status === 200) {
+      toast.success("Template Successfully Created")
+      const encryptedId = window.btoa(res.data.template.id)
+      router.push("/code-template?id=" + encryptedId)
+    } else  {
+      toast.error(res.data.message)
+    } 
   }
 
   const toggleEditor = () =>    {
     setEditor(!editorToggle)
   }
 
+  const toggleDialogue = () =>    {
+    setTempTags(tags)
+    setDialogue(!dialogueToggle);
+  }
+
   const addTag = () =>  {
-    var exists = tags.indexOf(newTag) > -1
+    var exists = tempTags.indexOf(newTag) > -1
     if (exists) {
       toast.error("Tag Already Added")
     } else  {
-      var orig = tags;
+      var orig = tempTags;
       var updatedTags = orig.concat([newTag]);
   
-      if (tags.length === 0)  {
-        setCurrTag(newTag)
-      }
-      setTags(updatedTags);
+      setNewTag("")
+      setTempTags(updatedTags);
     }
-    setNewTag("");
   }
 
-  const deleteTag = () => {
-    var newTags = tags.filter((word) => (!(word === selectTag)));
-    
-    setTags(newTags);
-    setCurrTag(newTags[0])
+  const handleKey = (e: { key: string; }) =>  {
+    if (e.key === "Enter") {
+      addTag()
+    }
+  }
+
+  const deleteTag = (tag: string)  =>  {
+    var newTags = tempTags.filter((word) => (!(word === tag)));
+    setTempTags(newTags);
   }
 
   const fillTemplate = async (id: number) =>    {
@@ -149,12 +163,115 @@ export default function Coding() {
   return (
     <div className="flex flex-col w-full h-screen bg-gray-50 text-gray-900">
 
+<div className="custom-ui">
+        <Box
+          component="form"
+          noValidate
+          onSubmit={triggerSave}
+          className="space-y-4"
+          maxWidth="lg"
+        >
+          <Dialog
+            disablePortal
+            open={dialogueToggle}
+            onClose={toggleDialogue}
+            aria-labelledby="customized-dialog-title"
+            disableEscapeKeyDown
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle id="customized-dialog-title" onClose={toggleDialogue}>
+              Edit Information:
+            </DialogTitle>
+            <DialogContent dividers>
+              <Box mb={2}>
+                <TextField
+                  required
+                  error={dialogErrorToggle}
+                  id="outlined-required"
+                  helperText={(dialogErrorToggle) ? "Please Fill Field." : ""}
+                  name="title"
+                  label="Title"
+                  variant="filled"
+                  fullWidth
+                  defaultValue={title}
+                />
+              </Box>
+              <Box mb={2}>
+                <TextField
+                  required
+                  error={dialogErrorToggle}
+                  id="standard-multiline-static"
+                  helperText={(dialogErrorToggle) ? "Please Fill Field." : ""}
+                  label="Description"
+                  name="desc"
+                  multiline
+                  rows={4}
+                  fullWidth
+                  defaultValue={desc}
+                />
+              </Box>
+              <Box mb={2} display="flex" alignItems="center" gap={2}>
+                <TextField
+                  id="outlined-controlled"
+                  label="New Tag"
+                  variant="outlined"
+                  size="small"
+                  value={newTag}
+                  onChange={(e) => {setNewTag(e.target.value)}}
+                  onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleKey(e);
+                    }
+                  }}
+                  style={{ width: '60%' }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={addTag}
+                  className="bg-slate-500 disabled:bg-slate-300 text-white px-6 py-2 rounded hover:bg-slate-600 disabled:hover:bg-slate-300 text-sm lg:text-base"
+                >
+                  Add Tag
+                </Button>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap", 
+                  gap: 1,          
+                }}
+              >
+                {tempTags.map((tag) => (
+                  <Chip
+                    key={tag}
+                    variant="outlined"
+                    label={tag}
+                    onDelete={() => deleteTag(tag)}
+                  />
+                ))}
+              </Box>
+
+            </DialogContent>
+            <DialogActions>
+              <Button autoFocus type="submit" color="primary">
+                Finish
+              </Button>
+              <Button autoFocus onClick={toggleDialogue} color="primary">
+                Cancel
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </Box>
+      </div>
+
       <div className="flex items-center p-4 bg-gray-100 border-b border-gray-300 shadow">
         {savingToggle && (
           <div className="flex flex-grow flex-col sm:flex-row sm:items-start sm:space-x-8 space-y-4 sm:space-y-0">
             <div className="flex flex-col space-y-4">
               <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-sm lg:text-base font-semibold">Title:</h1>
+                <h1 className="text-lg font-semibold">Title:</h1>
                 <textarea
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -166,85 +283,25 @@ export default function Coding() {
               </div>
 
               <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-sm lg:text-base font-semibold">Description:</h1>
+                <h1 className="text-lg font-semibold">Description:</h1>
                 <textarea
                   value={desc}
                   onChange={(e) => setDesc(e.target.value)}
                   className={isIncomplete && !desc ? "resize-none w-[200px] sm:w-[300px] h-12 sm:h-16 bg-gray-200 text-gray-900 border border-red-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-red-700" : 
-                    "resize-none w-[150px] lg:w-[220px] h-12 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    "resize-none w-[200px] sm:w-[300px] h-12 sm:h-16 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   }
                 />
               </div>
             </div>
-
-            <div className="flex flex-col sm:items-start items-start space-y-4">
-              <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <h1 className="text-sm lg:text-base font-semibold">Tags:</h1>
-                <select
-                  onChange={(e) => setCurrTag(e.target.value)}
-                  className="bg-gray-200 border border-gray-300 rounded px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[100px] lg:w-[170px]]"
-                >
-                  {tags.length === 0 && (
-                    <option
-                      key="No Tags"
-                      value="No Tags"
-                      className="bg-gray-200 text-gray-800"
-                    >
-                      No Tags
-                    </option>
-                  )}
-                  {tags.map((tag) => (
-                    <option
-                      key={tag}
-                      value={tag}
-                      className="bg-gray-200 text-gray-800"
-                    >
-                      {tag}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={deleteTag}
-                  disabled={tags.length === 0}
-                  className="bg-slate-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded text-xs sm:text-sm lg:text-base hover:bg-slate-600 disabled:bg-slate-300 disabled:hover:bg-slate-300"
-                >
-                  Delete
-                </button>
-              </div>
-
-              <div className="flex flex-row items-center sm:space-x-2 space-x-1">
-                <textarea
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  className="resize-none lg:w-[175px] w-[120px] h-8 bg-gray-200 text-gray-900 border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  onClick={addTag}
-                  disabled={newTag === ""}
-                  className="bg-slate-500 disabled:bg-slate-300 text-white px-2 py-1 rounded hover:bg-slate-600  disabled:hover:bg-slate-300 text-xs lg:text-sm"
-                >
-                  Add Tag
-                </button>
-              </div>
-
-            </div>
           </div>
         )}
 
-        <div className="ml-auto flex flex-col sm:flex-row sm:space-x-3 space-y-2 sm:space-y-0">
-          {savingToggle && (
-            <button
-              onClick={toggleSave}
-              className="bg-slate-500 text-white px-2 py-2 rounded hover:bg-slate-600 text-sm sm:text-base"
-            >
-              Hide
-            </button>
-          )}
+        <div className="ml-auto flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
           <button
-            onClick={triggerSave}
-            className="bg-blue-500 text-white px-2 py-2 rounded hover:bg-blue-600 text-sm sm:text-base"
+            onClick={toggleDialogue}
+            className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm sm:text-base"
           >
-            {savingToggle ? "Save" : "Create Code Template"}
+            Create Code Template
           </button>
         </div>
       </div>
