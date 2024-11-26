@@ -1,5 +1,5 @@
+import { verifyToken } from "@/utils/auth";
 import prisma from "@/middleware/ratingCountMiddleware";
-import { verifyLoggedIn, verifyToken } from "@/utils/auth";
 
 /**
  * @swagger

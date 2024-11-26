@@ -32,6 +32,8 @@ const NavbarContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const navLinks = [
+    { text: "Blog Posts", href: "/posts" },
+    { text: "Code Templates", href: "/code-templates" },
     { text: "About", href: "/about" },
     { text: "Contact", href: "/contact" },
     { text: "Help", href: "/help" },
@@ -187,7 +189,6 @@ const NavbarContent = () => {
           )}
           {navLinks.map((link, index) => (
             <ListItem
-              button
               key={index}
               component={Link}
               href={link.href}
@@ -198,11 +199,10 @@ const NavbarContent = () => {
           ))}
           {isLoggedIn ? (
             <>
-              <ListItem button component={Link} href="/profile">
+              <ListItem component={Link} href="/profile">
                 <ListItemText primary="Profile" />
               </ListItem>
               <ListItem
-                button
                 onClick={() => {
                   logout();
                   toggleDrawer(false)();
@@ -213,10 +213,10 @@ const NavbarContent = () => {
             </>
           ) : (
             <>
-              <ListItem button component={Link} href="/login">
+              <ListItem component={Link} href="/login">
                 <ListItemText primary="Login" />
               </ListItem>
-              <ListItem button component={Link} href="/signup">
+              <ListItem component={Link} href="/signup">
                 <ListItemText primary="Signup" />
               </ListItem>
             </>
@@ -231,6 +231,10 @@ const NavbarContent = () => {
         onClose={handleMenuClose}
       >
         <MenuItem onClick={() => router.push("/profile")}>Profile</MenuItem>
+
+        <MenuItem onClick={() => router.push("/user/posts")}>User Posts</MenuItem>
+        <MenuItem onClick={() => router.push("/user/code-templates")}>User Code Templates</MenuItem>
+
         <MenuItem
           onClick={() => {
             logout();

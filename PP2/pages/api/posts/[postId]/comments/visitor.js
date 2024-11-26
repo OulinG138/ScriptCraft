@@ -116,77 +116,39 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: "Post not found." });
   }
 
-  if (req.method === "POST") {
-    verifyToken(req, res, async () => {
-      const { content, parentCommentId } = req.body;
-      const userId = req.user.sub;
-
-      // Check if content is an empty string
-      if (!content || content.trim() === "") {
-        return res.status(400).json({ error: "Content cannot be empty." });
-      }
-
-      try {
-        // Check if parentCommentId exists in the database if provided
-        if (parentCommentId) {
-          const parentComment = await prisma.comment.findUnique({
-            where: { id: Number(parentCommentId) },
-          });
-
-          if (!parentComment) {
-            return res.status(404).json({ error: "Parent comment not found." });
-          }
-
-          // Check if the postId of the parent comment matches the current postId
-          if (parentComment.postId !== Number(postId)) {
-            return res
-              .status(400)
-              .json({ error: "Parent comment does not belong to this post." });
-          }
-        }
-
-        const newComment = await prisma.comment.create({
-          data: {
-            content,
-            post: {
-              connect: { id: Number(postId) },
-            },
-            author: {
-              connect: { id: userId },
-            },
-            ...(parentCommentId && {
-              parentComment: { connect: { id: parentCommentId } },
-            }),
-          },
-        });
-
-        res.status(201).json(newComment);
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal Server Error" });
-      }
-    });
-  } else if (req.method === "GET") {
+  if (req.method === "GET") {
     try {
       const { sortBy = "ratings", page = 1, limit = 10 } = req.query;
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
       const skip = (pageNum - 1) * limitNum;
 
-      verifyLoggedIn(req, res);
-      let where;
-      if (!req.user) {
-        where = { postId, isHidden: false };
-      } else {
-        where = {
-          postId: Number(postId),
-          OR: [{ isHidden: false }, { authorId: req.user.sub }],
-        };
-      }
-
       let results = await prisma.comment.findMany({
-        where,
+        where: { parentCommentId: null, isHidden: false },
+        include: {
+          author: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+          author: true,
+          replies: true,
+          ratings: req.user?.sub ? {
+            where: {
+              userId: req.user?.sub,
+            },
+          } : false,
+        },
       });
+                
+      results = results.map(comment => ({
+        ...comment,
+        repliesCount: comment.replies.length,
+        replies: undefined,
+        ratings: undefined,
+        userRating: comment.ratings?.length ? comment.ratings[0] : undefined,
+      }));
 
       // Sort results based on the 'sortBy' parameter or createdAt date
       if (sortBy === "ratings") {

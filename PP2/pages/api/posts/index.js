@@ -1,4 +1,4 @@
-import { verifyToken, verifyLoggedIn } from "@/utils/auth";
+import { verifyToken } from "@/utils/auth";
 import prisma from "@/utils/db";
 
 /**
@@ -165,13 +165,12 @@ export default async function handler(req, res) {
             title,
             description,
             content,
-            // Connect or create tags if provided
             tags:
               tags && tags.length > 0
                 ? {
                     connectOrCreate: tags.map((tagName) => ({
-                      where: { name: tagName },
-                      create: { name: tagName },
+                      where: { name: tagName.toLowerCase() },
+                      create: { name: tagName.toLowerCase() },
                     })),
                   }
                 : undefined,
@@ -192,51 +191,47 @@ export default async function handler(req, res) {
       }
     });
   } else if (req.method === "GET") {
+    verifyToken(req, res, async () => {
     try {
       const {
-        search,
+        title,
+        content,
+        codeTemplate,
         sortBy = "ratings",
         page = 1,
         limit = 10,
-        codeTemplateId,
         searchTags,
       } = req.query;
       const pageNum = parseInt(page, 10);
       const limitNum = parseInt(limit, 10);
       const skip = (pageNum - 1) * limitNum;
 
-      verifyLoggedIn(req, res);
-      let where;
-      if (!req.user) {
-        where = { isHidden: false };
-      } else {
-        where = {
-          OR: [{ isHidden: false }, { authorId: req.user.sub }],
-        };
-      }
+      let where = {};
+      where.OR = [
+        { isHidden: false },
+        { authorId: req.user.sub },
+      ];
 
-      // Add filters based on the search query if it exists
-      if (search) {
-        where.OR = [
-          { title: { contains: search.toLowerCase() } },
-          { content: { contains: search.toLowerCase() } },
-          {
-            codeTemplates: {
-              some: {
-                title: { contains: search.toLowerCase() },
-              },
-            },
-          },
-        ];
-      }
+      const additionalFilters = [];
 
-      // Add filter for codeTemplateId if it exists
-      if (codeTemplateId) {
-        if (!where.AND) where.AND = [];
-        where.AND.push({
+      if (title) {
+        additionalFilters.push({ title: { contains: title.toLowerCase() } });
+      }
+    
+      if (content) {
+        additionalFilters.push({ content: { contains: content.toLowerCase() } });
+      }
+    
+      if (codeTemplate) {
+        additionalFilters.push({
           codeTemplates: {
             some: {
-              id: Number(codeTemplateId),
+              OR: [
+                { title: { contains: codeTemplate.toLowerCase() } },
+                { codeContent: { contains: codeTemplate.toLowerCase() } },
+                { explanation: { contains: codeTemplate.toLowerCase() } },
+                { language: { contains: codeTemplate.toLowerCase() } },
+              ],
             },
           },
         });
@@ -248,21 +243,37 @@ export default async function handler(req, res) {
           .split(",")
           .map((tag) => tag.trim())
           .filter((tag) => tag);
-        if (!where.AND) where.AND = [];
-        where.AND.push({
+      
+          additionalFilters.push({
           AND: tags.map((tag) => ({
             tags: {
               some: {
-                name: tag,
+                name: {
+                  equals: tag.toLowerCase(),
+                },
               },
             },
           })),
         });
       }
 
+      if (additionalFilters.length > 0) {
+        where = {
+          AND: [where, ...additionalFilters],
+        };
+      }
+      
       // Fetch results from the database based on the 'where' condition
       let results = await prisma.blogPost.findMany({
         where,
+        include: {
+          author: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          }, 
+        }
       });
 
       // Sort results based on the 'sortBy' parameter or createdAt date
@@ -301,6 +312,7 @@ export default async function handler(req, res) {
       console.error(error);
       return res.status(500).json({ error: "Internal Server Error" });
     }
+    })
   } else {
     return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }

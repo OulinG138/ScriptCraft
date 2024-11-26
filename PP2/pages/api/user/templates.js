@@ -1,8 +1,10 @@
+
+import { verifyToken } from "@/utils/auth";
 import prisma from "@/utils/db";
 
 /**
  * @swagger
- * /api/code/search:
+ * /api/user/templates:
  *   get:
  *     summary: Retrieve a paginated list of posts
  *     description: This endpoint allows a user or visitor to retreive a paginated list of posts.
@@ -75,10 +77,10 @@ import prisma from "@/utils/db";
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    try {
+    verifyToken(req, res, async () => {
+      try {
       const {
-        title,
-        explanation,
+        search,
         page = 1,
         limit = 10,
         searchTags,
@@ -87,16 +89,21 @@ export default async function handler(req, res) {
       const limitNum = parseInt(limit, 10);
       const skip = (pageNum - 1) * limitNum;
 
-      let where = {};
-
-      const additionalFilters = [];
-
-      if (title) {
-        additionalFilters.push({ title: { contains: title.toLowerCase() } });
-      }
-
-      if (explanation) {
-        additionalFilters.push({ explanation: { contains: explanation.toLowerCase() } });
+      let where = { authorId: req.user.sub};
+      
+      // Add filters based on the search query if it exists
+      if (search) {
+        where.OR = [
+          { title: { contains: search.toLowerCase() } },
+          { explanation: { contains: search.toLowerCase() } },
+          {
+            codeTemplates: {
+              some: {
+                title: { contains: search.toLowerCase() },
+              },
+            },
+          },
+        ];
       }
 
       // Add filter for tags if it exists
@@ -107,7 +114,7 @@ export default async function handler(req, res) {
           .filter((tag) => tag);
       
         if (!where.AND) where.AND = [];
-        additionalFilters.push({
+        where.AND.push({
           AND: tags.map((tag) => ({
             tags: {
               some: {
@@ -118,12 +125,6 @@ export default async function handler(req, res) {
             },
           })),
         });
-      }
-
-      if (additionalFilters.length > 0) {
-        where = {
-          AND: [where, ...additionalFilters],
-        };
       }
 
       // Fetch results from the database based on the 'where' condition
@@ -158,10 +159,11 @@ export default async function handler(req, res) {
       };
 
       return res.status(200).json(response);
-    } catch (error) {
-      console.error(error);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
   }
 }
 

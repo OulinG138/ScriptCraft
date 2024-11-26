@@ -11,6 +11,45 @@ const routers = {
     authAxiosInstance.delete("/code/template/" + id, getJWTHeader(accessToken)),
   template: async (payload: object, accessToken: string) =>
     authAxiosInstance.post("/code/template", payload, getJWTHeader(accessToken)),
+  getPaginatedTemplates: async (
+    accessToken: string | undefined,
+    title: string,
+    explanation: string,
+    tags: string[],
+    page: number,
+    limit: number
+  ) => {
+    const queryParams: Record<string, string> = {
+      title,
+      explanation,
+      searchTags: tags.join(", "),
+      page: page.toString(),
+      limit: limit.toString(),
+    };
+    const queryString = new URLSearchParams(queryParams).toString();
+    return authAxiosInstance.get(`/code/search?${queryString}`);
+  },
+  getUserTemplates: async (
+    accessToken: string | undefined,
+    title: string,
+    explanation: string,
+    tags: string[],
+    page: number,
+    limit: number
+  ) => {
+    const queryParams: Record<string, string> = {
+      title, explanation,
+      searchTags: tags.join(", "),
+      page: page.toString(),
+      limit: limit.toString(),
+    };
+    const queryString = new URLSearchParams(queryParams).toString();
+    if (accessToken) {
+      return authAxiosInstance.get(`/user/templates?${queryString}`, getJWTHeader(accessToken));
+    } else {
+      return authAxiosInstance.get(`/user/templates?${queryString}`);
+    }
+  },
 };
 
 export default routers;
