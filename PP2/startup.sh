@@ -54,23 +54,9 @@ else
   echo "docker is already installed."
 fi
 
-if ! command -v docker.io &>/dev/null; then
-  echo "docker engine service is not installed. Installing now..."
-  sudo apt-get install docker.io
-  echo "docker engine service installed successfully."
-else
-  echo "docker engine service is already installed."
-fi
+sudo dockerd &
 
 create_docker_images
-
-# Check and ensure the necessary programming languages are installed
-echo "Checking required programming languages..."
-
-check_and_install_command gcc gcc          # C compiler
-check_and_install_command g++ g++          # C++ compiler
-check_and_install_command java default-jre # Java runtime environment
-check_and_install_command python3 python3  # Python interpreter
 
 # Install Prisma dependencies
 echo "Checking for Prisma..."
@@ -101,6 +87,8 @@ npx prisma generate
 # Run seed script
 echo "Running seed script..."
 npx tsx prisma/seed.ts
+
+sudo systemctl stop docker
 
 # Final check
 echo "Project setup complete. You can now start the server using run.sh"
