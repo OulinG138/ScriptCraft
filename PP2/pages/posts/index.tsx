@@ -60,44 +60,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
-
-  const updateURL = (newParams: {
-    title?: string;
-    content?: string;
-    codeTemplate?: string;
-    tags?: string[];
-    sortBy?: string;
-    page?: number;
-    limit?: number;
-  }) => {
-    const searchParams = new URLSearchParams();
-    for (const [key, value] of Object.entries(newParams)) {
-      if (!value) {
-        continue;
-      }
-      if (Array.isArray(value)) {
-      // Filter out undefined, null, or empty string items
-      const filteredArray = value.filter(item => item !== undefined && item !== null && item !== '');
-
-      if (filteredArray.length > 0) {
-        const joined = filteredArray.join(', ');
-        searchParams.append(key, joined);
-      }
-      } else {
-        searchParams.append(key, String(value));
-      }
-    }
-  
-    const queryString = searchParams.toString();
-    router.replace(
-      {
-        pathname: router.pathname,
-        query: queryString,
-      },
-      undefined,
-      { shallow: true }
-    );
-  };
+  let controller: AbortController | null = null;
 
   // post handlers
   const fetchPosts = async () => {
@@ -135,12 +98,12 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
         );
         setPosts(response.data.posts);
         setTotalPosts(response.data.totalPosts);
+        console.log('fetched posts:', response.data.posts);
       }
     } catch (error) {
       console.error("Error fetching posts", error);
     } finally {
       setIsLoading(false);
-      updateURL({title: search.title, content: search.content, codeTemplate: search.codeTemplate, tags, sortBy, page, limit: postsPerPage});
     }
   };
 
@@ -260,41 +223,41 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
 
   const [mounted, setMounted] = useState(false);
 
-  // useEffect(() => {
-  //   setMounted(true);
-  // }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // // Load state from sessionStorage once mounted
-  // useEffect(() => {
-  //   if (mounted) {
-  //     const savedState = JSON.parse(
-  //       sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
-  //     );
-  //     setSearch(
-  //       savedState.search || { title: "", content: "", codeTemplate: "" }
-  //     );
-  //     setTags(savedState.tags || []);
-  //     setSortBy(savedState.sortBy || "ratings");
-  //     setPage(savedState.page || 1);
-  //     setPostsPerPage(savedState.postsPerPage || 5);
-  //   }
-  // }, [mounted]);
+  // Load state from sessionStorage once mounted
+  useEffect(() => {
+    if (mounted) {
+      const savedState = JSON.parse(
+        sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
+      );
+      setSearch(
+        savedState.search || { title: "", content: "", codeTemplate: "" }
+      );
+      setTags(savedState.tags || []);
+      setSortBy(savedState.sortBy || "ratings");
+      setPage(savedState.page || 1);
+      setPostsPerPage(savedState.postsPerPage || 5);
+    }
+  }, [mounted]);
 
-  // // Save state to sessionStorage whenever it changes
-  // useEffect(() => {
-  //   if (mounted) {
-  //     console.log("saving..", search);
-  //     sessionStorage.setItem(
-  //       LOCAL_STORAGE_KEY,
-  //       JSON.stringify({ search, tags, sortBy, page, postsPerPage })
-  //     );
-  //   }
-  // }, [search, tags, sortBy, page, postsPerPage, mounted]);
+  // Save state to sessionStorage whenever it changes
+  useEffect(() => {
+    if (mounted) {
+      console.log("saving..", search);
+      sessionStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify({ search, tags, sortBy, page, postsPerPage })
+      );
+    }
+  }, [search, tags, sortBy, page, postsPerPage, mounted]);
 
-  // // Avoid rendering the component until mounted
-  // if (!mounted) {
-  //   return <CircularProgress />;
-  // }
+  // Avoid rendering the component until mounted
+  if (!mounted) {
+    return <CircularProgress />;
+  }
 
   return (
     <Container sx={{ mb: 5, mt: 5 }}>

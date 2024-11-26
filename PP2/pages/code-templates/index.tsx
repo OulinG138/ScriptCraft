@@ -57,43 +57,6 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
-  const updateURL = (newParams: {
-    title?: string;
-    explanation?: string;
-    tags?: string[];
-    page?: number;
-    limit?: number;
-  }) => {
-    const searchParams = new URLSearchParams();
-    for (const [key, value] of Object.entries(newParams)) {
-      if (!value) {
-        continue;
-      }
-      if (Array.isArray(value)) {
-      // Filter out undefined, null, or empty string items
-      const filteredArray = value.filter(item => item !== undefined && item !== null && item !== '');
-
-      if (filteredArray.length > 0) {
-        const joined = filteredArray.join(', ');
-        searchParams.append(key, joined);
-      }
-      } else {
-        searchParams.append(key, String(value));
-      }
-    }
-  
-    const queryString = searchParams.toString();
-    router.replace(
-      {
-        pathname: router.pathname,
-        query: queryString,
-      },
-      undefined,
-      { shallow: true }
-    );
-  };
-
-
   // post handlers
   const fetchPosts = async () => {
     try {
@@ -131,7 +94,6 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
       console.error("Error fetching posts", error);
     } finally {
       setIsLoading(false);
-      updateURL({title: search.title, explanation: search.explanation, tags, page, limit: postsPerPage});
     }
   };
 
@@ -194,25 +156,25 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     }
   };
 
-  // const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // useEffect(() => {
-  //   setMounted(true);
-  // }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // // Load state from sessionStorage once mounted
-  // useEffect(() => {
-  //   if (mounted) {
-  //     const savedState = JSON.parse(
-  //       sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
-  //     );
-  //     setSearch(savedState.search || { title: "", explanation: "" });
-  //     setTags(savedState.tags || []);
-  //     setSortBy(savedState.sortBy || "ratings");
-  //     setPage(savedState.page || 1);
-  //     setPostsPerPage(savedState.postsPerPage || 5);
-  //   }
-  // }, [mounted]);
+  // Load state from sessionStorage once mounted
+  useEffect(() => {
+    if (mounted) {
+      const savedState = JSON.parse(
+        sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
+      );
+      setSearch(savedState.search || { title: "", explanation: "" });
+      setTags(savedState.tags || []);
+      setSortBy(savedState.sortBy || "ratings");
+      setPage(savedState.page || 1);
+      setPostsPerPage(savedState.postsPerPage || 5);
+    }
+  }, [mounted]);
 
   // // Save state to sessionStorage whenever it changes
   // useEffect(() => {
@@ -225,9 +187,9 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   // }, [search, tags, sortBy, page, postsPerPage, mounted]);
 
   // Avoid rendering the component until mounted
-  // if (!mounted) {
-  //   return <CircularProgress />;
-  // }
+  if (!mounted) {
+    return <CircularProgress />;
+  }
 
   return (
     <Container sx={{ mb: 5, mt: 5 }}>
