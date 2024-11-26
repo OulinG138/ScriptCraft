@@ -31,6 +31,7 @@
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
     "next": "14.2.15",
+    "qs": "^6.13.1",
     "react": "^18",
     "react-confirm-alert": "^3.0.6",
     "react-dom": "^18",
@@ -46,6 +47,7 @@
   "devDependencies": {
     "@types/lodash": "^4.17.13",
     "@types/node": "^20",
+    "@types/qs": "^6.9.17",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/react-toastify": "^4.0.2",
