@@ -373,8 +373,12 @@ const PostDetailPage = () => {
   else if (!post) return <CircularProgress/>;
   else 
   return (
-    <Container sx={{ pt: 3, pb: 3 }}>
-      <Box sx={{ padding: 3, border: "1px solid #ddd", borderRadius: 2, display: 'flex', alignItems: 'flex-start', marginBottom: '16px'}} >
+    <Box sx={{display: 'flex', flexDirection: 'row', justifyContent: 'center', margin: '0 auto', mt: 8, p: 2}}>
+      <Box sx={{mt: 1}}>
+      <Button variant="contained" sx={{justifyContent: 'flex-end'}}onClick={() => router.back()}>Back</Button>
+      </Box>
+    <Container sx={{m:0}}>
+      <Box sx={{ padding: 5, border: "1px solid #ddd", borderRadius: 2, display: 'flex', alignItems: 'flex-start', marginBottom: '16px'}} >
         <div style={{ flex: 1 }}>
         <Box className="flex justify-between items-center">
           <Typography variant="h4" sx={{ mb: 2, fontSize: '2rem' }}>
@@ -675,6 +679,7 @@ const PostDetailPage = () => {
     <Alert message={snackbarMessage} openSnackbar={openSnackbar} setOpenSnackbar={setOpenSnackbar} />
 
     </Container>
+    </Box >
   )
 };
 
