@@ -50,6 +50,8 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
+  let controller: AbortController | null = null;
+
   // post handlers
   const fetchPosts = async () => {
     try {
@@ -58,7 +60,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       if (user) {
         if (!auth.accessToken) {
           setSnackbarMessage("Error: Please log out and try again");
-          setOpenSnackbar(false);
+          setOpenSnackbar(true);
           return
         }
         response = await API.blogpost.getUserBlogPosts(
@@ -82,11 +84,11 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
         );
         setPosts(response.data.posts);
         setTotalPosts(response.data.totalPosts);
+        console.log('fetched posts:', response.data.posts);
       }
     } catch (error) {
       console.error("Error fetching posts", error);
     } finally {
-      console.log(posts);
       setIsLoading(false);
     }
   };
@@ -109,13 +111,20 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   };
 
   useEffect(() => {
-    fetchPosts();
+    const fetchData = async () => {
+      try {
+        await fetchPosts();
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    };
+    fetchData()
   }, [page, sortBy, tags, postsPerPage]);
 
   // search handlers
-  const handleSearchClick = () => {
+  const handleSearchClick = async () => {
     setPage(1);
-    fetchPosts();
+    await fetchPosts();
   };
 
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -176,7 +185,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     try {
       await API.blogpost.postBlogPost(auth.accessToken, newPost);
       closeCreatePostDialog();
-      fetchPosts();
+      await fetchPosts();
       setSnackbarMessage("Post created successfully!");
       setOpenSnackbar(true);
     } catch (error) {
@@ -192,28 +201,28 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     setMounted(true);
   }, []);
 
-  // Load state from sessionStorage once mounted
-  useEffect(() => {
-    if (mounted) {
-      const savedState = JSON.parse(sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
-      setSearch(savedState.search || {title: "", content: "", codeTemplate: ""});
-      setTags(savedState.tags || []);
-      setSortBy(savedState.sortBy || "ratings");
-      setPage(savedState.page || 1);
-      setPostsPerPage(savedState.postsPerPage || 5);
-    }
-  }, [mounted]);
+  // // Load state from sessionStorage once mounted
+  // useEffect(() => {
+  //   if (mounted) {
+  //     const savedState = JSON.parse(sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
+  //     setSearch(savedState.search || { title: "", content: "", codeTemplate: ""});
+  //     setTags(savedState.tags || []);
+  //     setSortBy(savedState.sortBy || "ratings");
+  //     setPage(savedState.page || 1);
+  //     setPostsPerPage(savedState.postsPerPage || 5);
+  //   }
+  // }, [mounted]);
 
-  // Save state to sessionStorage whenever it changes
-  useEffect(() => {
-    if (mounted) {
-      console.log('saving..', search)
-      sessionStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify({ search, tags, sortBy, page, postsPerPage })
-      );
-    }
-  }, [search, tags, sortBy, page, postsPerPage, mounted]);
+  // // Save state to sessionStorage whenever it changes
+  // useEffect(() => {
+  //   if (mounted) {
+  //     console.log('saving..', search)
+  //     sessionStorage.setItem(
+  //       LOCAL_STORAGE_KEY,
+  //       JSON.stringify({ search, tags, sortBy, page, postsPerPage })
+  //     );
+  //   }
+  // }, [search, tags, sortBy, page, postsPerPage, mounted]);
 
   // Avoid rendering the component until mounted
   if (!mounted) {

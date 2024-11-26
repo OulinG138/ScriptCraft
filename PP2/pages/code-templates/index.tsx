@@ -83,7 +83,6 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     } catch (error) {
       console.error("Error fetching posts", error);
     } finally {
-      console.log(posts);
       setIsLoading(false);
     }
   };
@@ -124,13 +123,20 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   };
 
   useEffect(() => {
-    fetchPosts();
+    const fetchData = async () => {
+      try {
+        await fetchPosts();
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      }
+    };
+    fetchData()
   }, [page, sortBy, tags, postsPerPage]);
 
   // search handlers
-  const handleSearchClick = () => {
+  const handleSearchClick = async () => {
     setPage(1);
-    fetchPosts();
+    await fetchPosts();
   };
 
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -145,27 +151,30 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     setMounted(true);
   }, []);
 
-  // Load state from sessionStorage once mounted
-  useEffect(() => {
-    if (mounted) {
-      const savedState = JSON.parse(sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
-      setSearch(savedState.search || { title: "", explanation: ""});
-      setTags(savedState.tags || []);
-      setSortBy(savedState.sortBy || "ratings");
-      setPage(savedState.page || 1);
-      setPostsPerPage(savedState.postsPerPage || 5);
-    }
-  }, [mounted]);
+  // // Load state from sessionStorage once mounted
+  // useEffect(() => {
+  //   const asyncfunction = async () => {
+  //   if (mounted) {
+  //     const savedState = JSON.parse(sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}");
+  //     setSearch(savedState.search || { title: "", explanation: ""});
+  //     setTags(savedState.tags || []);
+  //     setSortBy(savedState.sortBy || "ratings");
+  //     setPage(savedState.page || 1);
+  //     setPostsPerPage(savedState.postsPerPage || 5);
+  //     await fetchPosts()
+  //   }}
+  //   asyncfunction();
+  // }, [mounted]);
 
-  // Save state to sessionStorage whenever it changes
-  useEffect(() => {
-    if (mounted) {
-      sessionStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify({ search, tags, sortBy, page, postsPerPage })
-      );
-    }
-  }, [search, tags, sortBy, page, postsPerPage, mounted]);
+  // // Save state to sessionStorage whenever it changes
+  // useEffect(() => {
+  //   if (mounted) {
+  //     sessionStorage.setItem(
+  //       LOCAL_STORAGE_KEY,
+  //       JSON.stringify({ search, tags, sortBy, page, postsPerPage })
+  //     );
+  //   }
+  // }, [search, tags, sortBy, page, postsPerPage, mounted]);
 
   // Avoid rendering the component until mounted
   if (!mounted) {

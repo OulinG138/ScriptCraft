@@ -202,6 +202,15 @@ const NavbarContent = () => {
               <ListItem component={Link} href="/profile">
                 <ListItemText primary="Profile" />
               </ListItem>
+
+              <ListItem component={Link} href="/user/posts">
+              <ListItemText primary="User Posts" />
+              </ListItem>
+
+              <ListItem component={Link} href="/user/code-templates">
+              <ListItemText primary="User Code Templates" />
+              </ListItem>
+
               <ListItem
                 onClick={() => {
                   logout();

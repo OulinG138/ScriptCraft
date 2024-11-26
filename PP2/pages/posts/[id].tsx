@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { MenuItem, Select, InputLabel, FormControl, Container, Typography, Box, Chip, Pagination, TextField, Button, List, ListItem, ListItemText, SelectChangeEvent } from "@mui/material";
+import { MenuItem, Select, InputLabel, FormControl, Container, Typography, Box, Chip, Pagination, TextField, Button, List, ListItem, ListItemText, SelectChangeEvent, CircularProgress } from "@mui/material";
 import Link from "next/link";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
@@ -238,7 +238,7 @@ const PostDetailPage = () => {
       setNewReply(prevState => ({
         ...prevState,
         content: "",
-        parentCommentId
+        parentCommentId: 0
       }));
       fetchComments(page);
       fetchReplies(parentCommentId);
@@ -369,9 +369,8 @@ const PostDetailPage = () => {
 
   const [isLoading, setIsLoading] = useState(true);
 
-  console.log(id, isLoading, post);
   if (!isLoading && !post) router.push('/404');
-  else if (!post) return <Typography variant="h5"sx={{ textAlign: 'center' }}> Loading... </Typography>;
+  else if (!post) return <CircularProgress/>;
   else 
   return (
     <Container sx={{ pt: 3, pb: 3 }}>

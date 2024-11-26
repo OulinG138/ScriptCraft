@@ -174,7 +174,7 @@ export default async function handler(req, res) {
         const limitNum = parseInt(limit, 10);
         const skip = (pageNum - 1) * limitNum;
 
-        let where = { parentCommentId: null };
+        let where = { postId: Number(postId), parentCommentId: null };
         where.OR = [
           { isHidden: false },
           { authorId: req.user.sub },
