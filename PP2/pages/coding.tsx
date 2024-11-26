@@ -16,6 +16,7 @@ import{
   FormControl,
   InputLabel,
   MenuItem,
+  Paper,
   Select,
   Tab,
   TextField,
@@ -278,7 +279,10 @@ export default function Coding() {
 
       <div className="flex flex-col sm:flex-row flex-grow overflow-hidden p-2 sm:p-4 space-y-2 sm:space-y-0 sm:space-x-4">
 
-        <div className="flex flex-col flex-grow bg-white shadow-lg rounded overflow-hidden w-full sm:w-4/5 h-full">
+      <Paper 
+          elevation={10}
+          className="overflow-hidden w-full sm:w-4/5 h-full"
+        >
           <Box sx={{ width: '100%', typography: 'body1', height: '100%' }}
               className="bg-gray-100 border-b border-gray-300 shadow">
             <TabContext value={tab}>
@@ -358,9 +362,12 @@ export default function Coding() {
               </div>
             </TabContext>
           </Box>
-        </div>
+        </Paper>
 
-        <div className="flex flex-col bg-white shadow-lg rounded overflow-hidden w-full sm:w-1/5 sm:h-auto sm:self-stretch">
+        <Paper 
+          elevation={10}
+          className="overflow-hidden w-full sm:w-1/5 sm:h-auto sm:self-stretch"
+        >
           <div className="bg-gray-100 p-2 sm:p-3 border-b border-gray-300">
             <Typography className="text-sm sm:text-lg font-semibold">stdout</Typography>
           </div>
@@ -375,7 +382,7 @@ export default function Coding() {
             readOnly
             className="w-full h-60 sm:h-full resize-none bg-gray-800 text-gray-200 border-none focus:outline-none"
           />
-        </div>
+        </Paper>
     </div>
   </div>
   );

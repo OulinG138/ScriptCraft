@@ -18,8 +18,11 @@ import{
   DialogTitle,
   FormControl,
   InputLabel,
+  Link,
   MenuItem,
+  Paper,
   Select,
+  Stack,
   Tab,
   TextField,
   Typography,
@@ -52,7 +55,6 @@ export default function Coding() {
   const [savingMessage, setMessage] = useState("")
 
   const [detailToggle, setDetail] = useState(true)
-  const [inputToggle, setInputting] = useState(true)
   const [dialogueToggle, setDialogue] = useState(false)
   const [dialogErrorToggle, setDialogueError] = useState(false)
   const [tab, setTab] = React.useState('1');
@@ -88,32 +90,37 @@ export default function Coding() {
     setIsExecuting(false)
   }
 
-  const triggerSave = async (event: React.FormEvent<HTMLFormElement>) =>   {
-      event.preventDefault();
-      const data = new FormData(event.currentTarget);
+  const triggerSave = async (event: React.FormEvent<HTMLFormElement> | undefined) =>   {
+      var newTitle = title 
+      var newDesc = desc
+      if (event)  {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
 
-      if (!data.get("title") || !data.get("desc"))  {
-        setDialogueError(true)
-        return;
+        if (!data.get("title") || !data.get("desc"))  {
+          setDialogueError(true)
+          return;
+        }
+        newTitle = data.get("title") as string
+        newDesc = data.get("desc") as string
       }
+
       setDialogueError(false)
       setIsSaving(true);
       setMessage("Saving Changes...")
 
-      const reqBody = { title: data.get("title"), explanation: data.get("desc"), codeContent: code, language: language, tags: tempTags};
+      const reqBody = { title: newTitle, explanation: newDesc, codeContent: code, language: language, tags: tempTags};
       const res = await API.code.editTemplate(id, reqBody,  _.get(auth, "accessToken", ""))
-
       if (res.status === 200) {
         toast.success("Changes Successfully Saved")
-        const encryptedId = router.query.id
-        const id = window.atob((typeof(encryptedId) === "string") ? encryptedId : "")
-
-
-        fillTemplate(parseInt(id))
+        fillDetails(res.data.result)
       } else  {
         toast.error(res.data.message)
       }
-      toggleDialogue()
+      if (dialogueToggle) {
+        toggleDialogue()
+      }
+
       setIsSaving(false);
   }
 
@@ -183,32 +190,38 @@ export default function Coding() {
   const fillTemplate = async (id: number) =>    {
     const template = await API.code.getTemplate(id)
     if (template.status === 200)    {
-        const data = template.data.result
-
-        setCode(data.codeContent)
-        setTitle(data.title)
-        setDesc(data.explanation)
-
-        const newTags: string[] = []
-
-        data.tags.forEach((tag: any) => {
-            newTags.push(tag.name)
-        });
-        setTags(newTags)
-
-        setId(data.id)
-
-        setIsOwner(auth.user?.id === data.authorId)
-
-        setAuthor(("Author #" + data.authorId).slice(0, 12))
-
-        setParentId((data.parentTemplateId === null) ? "" : window.btoa(data.parentTemplateId))
-
-        setCreated(data.createdAt.split("T")[0] + " at " + data.createdAt.split("T")[1].split(".")[0])
-        setUpdated(data.updatedAt.split("T")[0] + " at " + data.updatedAt.split("T")[1].split(".")[0])
+      fillDetails(template.data.result)
     }   else    {
         router.push("/coding")
     }
+  }
+
+  const fillDetails = (data: {codeContent: string, title: string, explanation: string, tags: string[],
+                              id: number, authorId: string, parentTemplateId: string, createdAt: string, updatedAt: string
+  }) => {
+    setCode(data.codeContent)
+    setTitle(data.title)
+    setDesc(data.explanation)
+
+    const newTags: string[] = []
+
+    data.tags.forEach((tag: any) => {
+        newTags.push(tag.name)
+    });
+
+    setTags(newTags);
+
+    setId(data.id);
+    setIsOwner(auth.user?.id === data.authorId);
+    setAuthor(("Author #" + data.authorId).slice(0, 12));
+    setParentId((data.parentTemplateId === null) ? "" : window.btoa(data.parentTemplateId));
+    const created_local = ((data.createdAt.split("T")[0] + " " + data.createdAt.split("T")[1].split(".")[0] + " UTC")).toString().split(" ")[0];
+    setCreated(created_local);
+
+    const updated_local = (new Date(data.updatedAt.split("T")[0] + " " + data.updatedAt.split("T")[1].split(".")[0] + " UTC")).toString().split(" ");
+    const updated_date = updated_local.slice(1, 4).join(" ");
+    const updated_time = updated_local[4];
+    setUpdated(updated_date + " at " + updated_time);
   }
 
   useEffect(() => {
@@ -369,119 +382,84 @@ export default function Coding() {
         </Box>
       </div>
 
-      <div className="flex items-center p-4 bg-gray-100 border-b border-gray-300 shadow">
-        {detailToggle && (
-          <div className="flex flex-grow flex-col sm:flex-row sm:items-start md:space-x-4 sm:space-x-8 space-y-4 sm:space-y-0">
+      <Paper elevation={1} className="flex flex-col items-start p-4 px-10 w-full">
+        <Box className="w-full">
+          <Stack direction="column" alignItems="flex-start">
+            <Typography variant="h4" className="w-full break-words">{title}</Typography>
+            <Typography variant="subtitle1" className="w-full break-words px-1">{`By ${author} | Posted ${created}`}</Typography>
 
-            <div className="flex flex-col space-y-4">
-              
-              <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                <h1 className="text-sm lg:text-base font-semibold">Title:</h1>
-                <h1 className="text-sm lg:text-base font-semibold max-w-[200px] md:max-w-[150px] break-words">
-                  {title}
-                </h1>
-              </div>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={toggleDetail}
+                size="small" 
+                className="text-sm px-3 py-1"
+              >
+                {(detailToggle) ? "Hide Details" : "Show Details"}
+              </Button>
 
-              <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                <h1 className="text-sm lg:text-base font-semibold">Author:</h1>
-                <h1 className="text-sm lg:text-base font-semibold">{author}</h1>
-              </div>
+              {isOwner && (
+                <Button
+                  variant="outlined"
+                  color="warning"
+                  onClick={toggleDialogue}
+                  size="small"
+                  className="text-sm px-3 py-1"
+                >
+                  Edit
+                </Button>
+              )}
 
-              <div className="flex flex-col space-y-4">
-                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                  <h1 className="text-sm lg:text-base font-semibold">Created On:</h1>
-                  <h1 className="text-xs lg:text-sm font-semibold">{created}</h1>
-                </div>
-                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                  <h1 className="text-sm lg:text-base font-semibold">Updated On:</h1>
-                  <h1 className="text-xs lg:text-sm font-semibold">{updated}</h1>
-                </div>
-                {!(parentId === "") && (
-                  <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                    <h1 className="text-sm lg:text-base font-semibold">Parent Template:</h1>
-                    <a className="text-blue-500 hover:text-blue-700 underline text-xs lg:text-sm"
-                      href={`/code-template?id=${parentId}`}>Link</a>
-                  </div>
-                )}
-              </div>
-            </div>
+              {isOwner && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={deleteAlert}
+                  size="small" 
+                  className="text-sm px-3 py-1"
+                >
+                  Delete
+                </Button>
+              )}
+            </Stack>
 
-              <div className="flex flex-col space-y-2">
-                <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
-                  <h1 className="text-sm lg:text-base font-semibold">Description:</h1>
-                    <h1 className="lg:text-sm text-xs font-semibold max-w-[135px] lg:max-w-[180px] break-words">
-                      {desc}
-                    </h1>
-                  </div>
+          </Stack>
 
-                  <div className="flex flex-row items-center md:space-x-1 sm:space-x-2 space-x-1">
+          {detailToggle && (
+            <Stack spacing={1}>
+              <Typography variant="body1" className="w-full break-words">{desc}</Typography>
+              {parentId && (
+                <Stack direction="row" spacing={1}>
+                  <Typography variant="subtitle1" className="font-semibold">Parent Template:</Typography>
+                  <Link href={"/code-template?id=" + parentId}>Link</Link>
+                </Stack>
+              )}
 
-                    <h1 className="text-sm lg:text-base font-semibold">Tags:</h1>
-                    <select
-                      className="bg-gray-200 border border-gray-300 rounded px-2 py-1 sm:px-4 sm:py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[100px] lg:w-[170px]"
-                    >
-                      {tags.length === 0 && (
-                        <option
-                          key="No Tags"
-                          value="No Tags"
-                          className="bg-gray-200 text-gray-800"
-                        >
-                          No Tags
-                        </option>
-                      )}
-                      {tags.map((tag) => (
-                        <option
-                          key={tag}
-                          value={tag}
-                          className="bg-gray-200 text-gray-800"
-                        >
-                          {tag}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-              </div>
-          </div>
-        )}
-
-        <div
-          className={`ml-auto ${
-            detailToggle
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-1 md:gap-3"
-              : "flex flex-row flex-wrap gap-1"
-          }`}
-        >
-          {isOwner && (
-            <button
-              onClick={deleteAlert}
-              className="bg-red-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-red-600 text-xs lg:text-sm"
-            >
-              Delete
-            </button>
+              <Stack direction="row" alignItems="center" spacing={1} className="mt-2">
+                <Typography className="font-semibold" variant="subtitle1">Tags:</Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexWrap: "wrap", 
+                    gap: 1,          
+                  }}
+                >
+                  {tags.map((tag) => (
+                    <Chip
+                      key={tag}
+                      variant="outlined"
+                      label={tag}
+                    />
+                  ))}
+                </Box>
+              </Stack>
+            </Stack>
           )}
-          {detailToggle && isOwner && (
-            <button
-              onClick={toggleDialogue}
-              className="bg-orange-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-orange-600 text-xs lg:text-sm"
-            >
-              Edit
-            </button>
-          )}
-          <button
-            onClick={toggleDetail}
-            className="bg-slate-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-slate-600 text-xs lg:text-sm"
-          >
-            {detailToggle ? "Hide Details" : "Show Details"}
-          </button>
-          <button
-            onClick={forkAlert}
-            className="bg-green-500 text-white px-2 sm:px-3 py-1 sm:py-2 rounded hover:bg-green-600 text-xs lg:text-sm"
-          >
-            Fork
-          </button>
-        </div>
-      </div>
-      
+        </Box>
+      </Paper>
+
+
       {isSaving && (
             <div className="flex justify-center items-center p-2 bg-blue-500 space-x-2">
               <h1 className="text-white">{savingMessage}</h1>
@@ -491,7 +469,10 @@ export default function Coding() {
 
       <div className="flex flex-col sm:flex-row flex-grow overflow-hidden p-2 sm:p-4 space-y-2 sm:space-y-0 sm:space-x-4">
 
-        <div className="flex flex-col flex-grow bg-white shadow-lg rounded overflow-hidden w-full sm:w-4/5 h-full">
+        <Paper 
+          elevation={10}
+          className="overflow-hidden w-full sm:w-4/5 h-full"
+        >
           <Box sx={{ width: '100%', typography: 'body1', height: '100%' }}
               className="bg-gray-100 border-b border-gray-300 shadow">
             <TabContext value={tab}>
@@ -520,23 +501,40 @@ export default function Coding() {
                   </FormControl>
                 </div>
 
-                <div className="ml-auto flex space-x-2">
-                  <Button
+                <Stack>
+                  <div className="ml-auto flex space-x-2">
+                    {isOwner && (
+                      <Button
+                          variant="contained"
+                          onClick={() => {triggerSave(undefined)}}
+                          className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm sm:text-base"
+                        >
+                          Save
+                      </Button>
+                    )}
+
+                    <Button 
                       variant="contained"
-                      onClick={() => {(!auth.user) ? toast.error("Only Users May Create Code Templates") : toggleDialogue()}}
-                      className="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600 text-sm sm:text-base"
+                      color="secondary"
+                      onClick={() => {forkAlert()}}
                     >
-                      Save As
-                  </Button>
-                
-                  <Button
-                    variant="contained"
-                    onClick={execute}
-                    className="bg-green-500 text-white px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm rounded hover:bg-green-600"
-                  >
-                    Execute
-                  </Button>
-                </div>
+                      Fork
+                    </Button>
+
+                    <Button
+                      variant="contained"
+                      onClick={execute}
+                      className="bg-green-500 text-white px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm rounded hover:bg-green-600"
+                    >
+                      Execute
+                    </Button>
+                  </div>
+                  <Box>
+                    <Typography variant="caption">Last Updated: {updated}</Typography>
+                  </Box>
+                  
+                </Stack>
+
               </div>
 
               <div className="flex-grow flex overflow-hidden h-full">
@@ -571,9 +569,12 @@ export default function Coding() {
               </div>
             </TabContext>
           </Box>
-        </div>
+        </Paper>
 
-        <div className="flex flex-col bg-white shadow-lg rounded overflow-hidden w-full sm:w-1/5 sm:h-auto sm:self-stretch">
+        <Paper 
+          elevation={10}
+          className="overflow-hidden w-full sm:w-1/5 sm:h-auto sm:self-stretch"
+        >
           <div className="bg-gray-100 p-2 sm:p-3 border-b border-gray-300">
             <Typography className="text-sm sm:text-lg font-semibold">stdout</Typography>
           </div>
@@ -588,7 +589,7 @@ export default function Coding() {
             readOnly
             className="w-full h-60 sm:h-full resize-none bg-gray-800 text-gray-200 border-none focus:outline-none"
           />
-        </div>
+        </Paper>
       </div>
     </div>
     );
