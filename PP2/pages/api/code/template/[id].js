@@ -271,7 +271,20 @@ export default async function handler(req, res) {
       });
 
       if (result) {
-        res.status(200).json({ message: "Get successful", result: result });
+
+        var author = await prisma.user.findFirst({
+          where:  {
+            id: result.authorId
+          },
+          select: {
+            firstName: true,
+            lastName: true,
+          }
+        })
+
+        const mergedResult = {...result, ...author}
+
+        res.status(200).json({ message: "Get successful", result: mergedResult});
       } else {
         res.status(401).json({ message: "Template not found" });
       }
@@ -386,9 +399,22 @@ export default async function handler(req, res) {
               tags: true,
             },
           });
+
+          var author = await prisma.user.findFirst({
+            where:  {
+              id: result.authorId
+            },
+            select: {
+              firstName: true,
+              lastName: true,
+            }
+          })
+  
+          const mergedResult = {...result, ...author}
+
           res
             .status(200)
-            .json({ message: "Template edit successful", result: result });
+            .json({ message: "Template edit successful", result: mergedResult });
         } else {
           res.status(402).json({ message: "Only owner may edit template" });
         }

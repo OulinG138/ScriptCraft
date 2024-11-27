@@ -189,6 +189,7 @@ export default function Coding() {
 
   const fillTemplate = async (id: number) =>    {
     const template = await API.code.getTemplate(id)
+    console.log(template)
     if (template.status === 200)    {
       fillDetails(template.data.result)
     }   else    {
@@ -197,7 +198,8 @@ export default function Coding() {
   }
 
   const fillDetails = (data: {codeContent: string, title: string, explanation: string, tags: string[],
-                              id: number, authorId: string, parentTemplateId: string, createdAt: string, updatedAt: string
+                              id: number, authorId: string, parentTemplateId: string, createdAt: string, updatedAt: string,
+                              firstName: string, lastName: string
   }) => {
     setCode(data.codeContent)
     setTitle(data.title)
@@ -213,7 +215,9 @@ export default function Coding() {
 
     setId(data.id);
     setIsOwner(auth.user?.id === data.authorId);
-    setAuthor(("Author #" + data.authorId).slice(0, 12));
+    setAuthor(data.firstName + " " + data.lastName + " " + data.authorId.slice(-5, ));
+    console.log(data)
+
     setParentId((data.parentTemplateId === null) ? "" : window.btoa(data.parentTemplateId));
     const created_local = ((data.createdAt.split("T")[0] + " " + data.createdAt.split("T")[1].split(".")[0] + " UTC")).toString().split(" ")[0];
     setCreated(created_local);
