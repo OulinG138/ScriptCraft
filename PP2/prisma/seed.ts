@@ -102,7 +102,10 @@ async function main() {
     createdTags.push(tag);
   }
 
-  // Create Admin User
+  // Create Admin User and Regular Users (40 total)
+  const users = [];
+
+  // Create Admin
   const admin = await prisma.user.create({
     data: {
       firstName: "Admin",
@@ -114,10 +117,10 @@ async function main() {
       avatarId: avatars[0].id,
     },
   });
+  users.push(admin);
 
-  // Create Regular Users
-  const users = [admin];
-  for (let i = 1; i <= 10; i++) {
+  // Create 40 regular users
+  for (let i = 1; i <= 40; i++) {
     const user = await prisma.user.create({
       data: {
         firstName: `User${i}`,
@@ -132,6 +135,7 @@ async function main() {
     users.push(user);
   }
 
+  // Create 40 Code Templates
   const templates = [];
   for (let i = 0; i < 40; i++) {
     const languageIndex = i % languages.length;
@@ -153,16 +157,16 @@ async function main() {
     templates.push(template);
   }
 
-  // Create Blog Posts with proper counts
+  // Create 40 Blog Posts
   const posts = [];
   for (let i = 0; i < 40; i++) {
     const templateIndex = i % templates.length;
     const tagIndex = i % createdTags.length;
     const post = await prisma.blogPost.create({
       data: {
-        title: `Getting Started with ${languages[i % languages.length]}`,
+        title: `Getting Started with ${languages[i % languages.length]} ${i + 1}`,
         description: `Learn how to write your first ${languages[i % languages.length]} program.`,
-        content: `# Introduction to ${languages[i % languages.length]}
+        content: `# Introduction to ${languages[i % languages.length]} - Part ${i + 1}
 
 Let's start with a simple print statement:
 
@@ -189,7 +193,7 @@ This is the simplest program you can write in ${languages[i % languages.length]}
     posts.push(post);
   }
 
-  // Create Comments with proper counts
+  // Create 40 Comments
   const comments = [];
   for (let i = 0; i < 40; i++) {
     const comment = await prisma.comment.create({
@@ -202,7 +206,7 @@ This is the simplest program you can write in ${languages[i % languages.length]}
             "Very helpful for beginners.",
             "Nice example!",
           ][i % 5]
-        }`,
+        } Comment #${i + 1}`,
         authorId: users[i % users.length].id,
         postId: posts[i % posts.length].id,
         isHidden: false,
@@ -213,47 +217,63 @@ This is the simplest program you can write in ${languages[i % languages.length]}
     comments.push(comment);
   }
 
-  // Create Reports and update counts
+  // Create 40 Reports for Posts
   for (let i = 0; i < 40; i++) {
-    const isPostReport = i % 2 === 0;
-    const targetId = isPostReport
-      ? posts[i % posts.length].id
-      : comments[i % comments.length].id;
-
     await prisma.report.create({
       data: {
-        explanation: `${
+        explanation: `Post Report ${i + 1}: ${
           [
-            "Needs review",
-            "Possible duplicate",
-            "Check content",
-            "Verify example",
-            "Review code",
+            "Needs review - inappropriate content",
+            "Possible duplicate post",
+            "Check content accuracy",
+            "Verify code example",
+            "Review for plagiarism",
           ][i % 5]
         }`,
-        targetType: isPostReport ? "post" : "comment",
+        targetType: "post",
         isResolved: i % 3 === 0,
         reporterId: users[i % users.length].id,
-        blogPostId: isPostReport ? targetId : null,
-        commentId: isPostReport ? null : targetId,
+        blogPostId: posts[i % posts.length].id,
+        commentId: null,
       },
     });
 
-    // Update report counts
-    if (isPostReport) {
-      await prisma.blogPost.update({
-        where: { id: targetId },
-        data: { reportCount: { increment: 1 } },
-      });
-    } else {
-      await prisma.comment.update({
-        where: { id: targetId },
-        data: { reportCount: { increment: 1 } },
-      });
-    }
+    // Update report count for the post
+    await prisma.blogPost.update({
+      where: { id: posts[i % posts.length].id },
+      data: { reportCount: { increment: 1 } },
+    });
   }
 
-  // Create Ratings and update counts
+  // Create 40 Reports for Comments
+  for (let i = 0; i < 40; i++) {
+    await prisma.report.create({
+      data: {
+        explanation: `Comment Report ${i + 1}: ${
+          [
+            "Inappropriate language",
+            "Spam comment",
+            "Harassment",
+            "Off-topic content",
+            "Misleading information",
+          ][i % 5]
+        }`,
+        targetType: "comment",
+        isResolved: i % 3 === 0,
+        reporterId: users[i % users.length].id,
+        blogPostId: null,
+        commentId: comments[i % comments.length].id,
+      },
+    });
+
+    // Update report count for the comment
+    await prisma.comment.update({
+      where: { id: comments[i % comments.length].id },
+      data: { reportCount: { increment: 1 } },
+    });
+  }
+
+  // Create Ratings (at least 40)
   for (let i = 0; i < 40; i++) {
     const isPostRating = i % 2 === 0;
     const targetId = isPostRating
@@ -270,7 +290,6 @@ This is the simplest program you can write in ${languages[i % languages.length]}
       },
     });
 
-    // Update rating counts
     if (isPostRating) {
       await prisma.blogPost.update({
         where: { id: targetId },
