@@ -26,7 +26,6 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
-  const LOCAL_STORAGE_KEY = user ? "userBlogSearchState" : "blogSearchState";
 
   // posts states
   const [isLoading, setIsLoading] = useState(true);
@@ -40,8 +39,14 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     content: "",
     codeTemplate: "",
   });
+  const [appliedSearch, setAppliedSearch] = useState({
+    title: "",
+    content: "",
+    codeTemplate: "",
+  });
   const [searchTags, setSearchTags] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [appliedTags, setAppliedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("ratings");
   const [postsPerPage, setPostsPerPage] = useState(5);
 
@@ -56,8 +61,6 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     codeTemplateIds: [] as number[],
   });
 
-  let controller: AbortController | null = null;
-
   // post handlers
   const fetchPosts = async () => {
     try {
@@ -70,10 +73,10 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
         }
         response = await API.blogpost.getUserBlogPosts(
           auth.accessToken,
-          search.title,
-          search.content,
-          search.codeTemplate,
-          tags,
+          appliedSearch.title,
+          appliedSearch.content,
+          appliedSearch.codeTemplate,
+          appliedTags,
           sortBy,
           page,
           postsPerPage
@@ -83,10 +86,10 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       } else {
         response = await API.blogpost.getPaginatedBlogPosts(
           auth.accessToken,
-          search.title,
-          search.content,
-          search.codeTemplate,
-          tags,
+          appliedSearch.title,
+          appliedSearch.content,
+          appliedSearch.codeTemplate,
+          appliedTags,
           sortBy,
           page,
           postsPerPage
@@ -113,12 +116,14 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
 
   const handleSortChange = (event: SelectChangeEvent<string>) => {
     setSortBy(event.target.value);
+    setPage(1);
   };
 
   const handlePostClick = (postId: number) => {
     router.push(`/posts/${window.btoa(String(postId))}`);
   };
 
+  // Fetch posts when relevant parameters change
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -128,12 +133,14 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       }
     };
     fetchData();
-  }, [page, sortBy, tags, postsPerPage]);
+  }, [page, sortBy, postsPerPage, appliedSearch, appliedTags]);
 
   // search handlers
   const handleSearchClick = async () => {
     setPage(1);
-    await fetchPosts();
+    setAppliedSearch(search);
+    setAppliedTags(tags);
+    updateURL();
   };
 
   const handleSearchKeyDown = (
@@ -142,6 +149,33 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     if (event.key === "Enter") {
       handleSearchClick();
     }
+  };
+
+  const updateURL = () => {
+    const queryParams = {
+      ...router.query,
+      title: search.title || undefined,
+      content: search.content || undefined,
+      codeTemplate: search.codeTemplate || undefined,
+      tags: tags.length ? tags.join(",") : undefined,
+      sortBy: sortBy !== "ratings" ? sortBy : undefined,
+      page: page !== 1 ? page : undefined,
+      postsPerPage: postsPerPage !== 5 ? postsPerPage : undefined,
+    };
+
+    // Remove undefined values from queryParams
+    Object.keys(queryParams).forEach(
+      (key) => queryParams[key] === undefined && delete queryParams[key]
+    );
+
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: queryParams,
+      },
+      undefined,
+      { shallow: true }
+    );
   };
 
   // create post handlers
@@ -218,32 +252,64 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     setMounted(true);
   }, []);
 
-  // Load state from sessionStorage once mounted
+  // Initialize state from URL query parameters
   useEffect(() => {
     if (mounted) {
-      const savedState = JSON.parse(
-        sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
-      );
-      setSearch(
-        savedState.search || { title: "", content: "", codeTemplate: "" }
-      );
-      setTags(savedState.tags || []);
-      setSortBy(savedState.sortBy || "ratings");
-      setPage(savedState.page || 1);
-      setPostsPerPage(savedState.postsPerPage || 5);
-    }
-  }, [mounted]);
+      const {
+        title = "",
+        content = "",
+        codeTemplate = "",
+        tags: queryTags = "",
+        sortBy: querySortBy = "ratings",
+        page: queryPage = "1",
+        postsPerPage: queryPostsPerPage = "5",
+      } = router.query;
 
-  // Save state to sessionStorage whenever it changes
+      const newSearch = {
+        title: Array.isArray(title) ? title[0] : title,
+        content: Array.isArray(content) ? content[0] : content,
+        codeTemplate: Array.isArray(codeTemplate)
+          ? codeTemplate[0]
+          : codeTemplate,
+      };
+
+      const newTags = queryTags
+        ? (Array.isArray(queryTags) ? queryTags[0] : queryTags)
+            .split(",")
+            .filter(Boolean)
+        : [];
+
+      const newSortBy = Array.isArray(querySortBy)
+        ? querySortBy[0]
+        : querySortBy;
+
+      const newPage =
+        parseInt(Array.isArray(queryPage) ? queryPage[0] : queryPage) || 1;
+
+      const newPostsPerPage =
+        parseInt(
+          Array.isArray(queryPostsPerPage)
+            ? queryPostsPerPage[0]
+            : queryPostsPerPage
+        ) || 5;
+
+      setSearch(newSearch);
+      setAppliedSearch(newSearch);
+      setTags(newTags);
+      setAppliedTags(newTags);
+      setSortBy(newSortBy);
+      setPage(newPage);
+      setPostsPerPage(newPostsPerPage);
+    }
+  }, [mounted, router.query]);
+
+  // Update URL when pagination or sorting changes
   useEffect(() => {
     if (mounted) {
-      console.log("saving..", search);
-      sessionStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify({ search, tags, sortBy, page, postsPerPage })
-      );
+      updateURL();
     }
-  }, [search, tags, sortBy, page, postsPerPage, mounted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, sortBy, postsPerPage]);
 
   // Avoid rendering the component until mounted
   if (!mounted) {

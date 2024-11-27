@@ -31,28 +31,25 @@ interface Post {
 }
 
 const TemplatesPage = ({ user = false }: { user?: boolean }) => {
-  const LOCAL_STORAGE_KEY = user
-    ? "userTemplateSearchState"
-    : "templateSearchState";
-
-  // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
 
-  // posts states
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<Post[]>([]);
   const [totalPosts, setTotalPosts] = useState(0);
   const [page, setPage] = useState(1);
 
-  // search states
   const [search, setSearch] = useState({ title: "", explanation: "" });
+  const [appliedSearch, setAppliedSearch] = useState({
+    title: "",
+    explanation: "",
+  });
   const [searchTags, setSearchTags] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("ratings");
+  const [appliedTags, setAppliedTags] = useState<string[]>([]);
   const [postsPerPage, setPostsPerPage] = useState(5);
+  const [mounted, setMounted] = useState(false);
 
-  // post handlers
   const fetchPosts = async () => {
     try {
       setIsLoading(true);
@@ -64,26 +61,24 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
         }
         response = await API.code.getUserTemplates(
           auth.accessToken,
-          search.title,
-          search.explanation,
-          tags,
+          appliedSearch.title,
+          appliedSearch.explanation,
+          appliedTags,
           page,
           postsPerPage
         );
-        setPosts(response.data.templates);
-        setTotalPosts(response.data.totalPosts);
       } else {
         response = await API.code.getPaginatedTemplates(
           auth.accessToken,
-          search.title,
-          search.explanation,
-          tags,
+          appliedSearch.title,
+          appliedSearch.explanation,
+          appliedTags,
           page,
           postsPerPage
         );
-        setPosts(response.data.templates);
-        setTotalPosts(response.data.totalPosts);
       }
+      setPosts(response.data.templates);
+      setTotalPosts(response.data.totalPosts);
     } catch (error) {
       console.error("Error fetching posts", error);
     } finally {
@@ -117,29 +112,39 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     setPage(value);
   };
 
-  const handleSortChange = (event: SelectChangeEvent<string>) => {
-    setSortBy(event.target.value);
-  };
-
   const handlePostClick = (postId: number) => {
     router.push(`/code-template?id=${window.btoa(String(postId))}`);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        await fetchPosts();
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-      }
+  const updateURL = () => {
+    const queryParams = {
+      ...router.query,
+      title: search.title || undefined,
+      explanation: search.explanation || undefined,
+      tags: tags.length ? tags.join(",") : undefined,
+      page: page !== 1 ? page : undefined,
+      postsPerPage: postsPerPage !== 5 ? postsPerPage : undefined,
     };
-    fetchData();
-  }, [page, sortBy, tags, postsPerPage]);
 
-  // search handlers
-  const handleSearchClick = async () => {
+    Object.keys(queryParams).forEach(
+      (key) => queryParams[key] === undefined && delete queryParams[key]
+    );
+
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: queryParams,
+      },
+      undefined,
+      { shallow: true }
+    );
+  };
+
+  const handleSearchClick = () => {
     setPage(1);
-    await fetchPosts();
+    setAppliedSearch(search);
+    setAppliedTags(tags);
+    updateURL();
   };
 
   const handleSearchKeyDown = (
@@ -150,40 +155,67 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     }
   };
 
-  const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Load state from sessionStorage once mounted
   useEffect(() => {
     if (mounted) {
-      const savedState = JSON.parse(
-        sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
-      );
-      setSearch(savedState.search || { title: "", explanation: "" });
-      setTags(savedState.tags || []);
-      setSortBy(savedState.sortBy || "ratings");
-      setPage(savedState.page || 1);
-      setPostsPerPage(savedState.postsPerPage || 5);
+      const {
+        title = "",
+        explanation = "",
+        tags: queryTags = "",
+        page: queryPage = "1",
+        postsPerPage: queryPostsPerPage = "5",
+      } = router.query;
+
+      const newSearch = {
+        title: Array.isArray(title) ? title[0] : title,
+        explanation: Array.isArray(explanation) ? explanation[0] : explanation,
+      };
+
+      const newTags = queryTags
+        ? (Array.isArray(queryTags) ? queryTags[0] : queryTags)
+            .split(",")
+            .filter(Boolean)
+        : [];
+
+      const newPage =
+        parseInt(Array.isArray(queryPage) ? queryPage[0] : queryPage) || 1;
+      const newPostsPerPage =
+        parseInt(
+          Array.isArray(queryPostsPerPage)
+            ? queryPostsPerPage[0]
+            : queryPostsPerPage
+        ) || 5;
+
+      setSearch(newSearch);
+      setAppliedSearch(newSearch);
+      setTags(newTags);
+      setAppliedTags(newTags);
+      setPage(newPage);
+      setPostsPerPage(newPostsPerPage);
     }
-  }, [mounted]);
+  }, [mounted, router.query]);
 
-  // // Save state to sessionStorage whenever it changes
-  // useEffect(() => {
-  //   if (mounted) {
-  //     sessionStorage.setItem(
-  //       LOCAL_STORAGE_KEY,
-  //       JSON.stringify({ search, tags, sortBy, page, postsPerPage })
-  //     );
-  //   }
-  // }, [search, tags, sortBy, page, postsPerPage, mounted]);
+  useEffect(() => {
+    if (mounted) {
+      updateURL();
+    }
+  }, [page, postsPerPage]);
 
-  // Avoid rendering the component until mounted
-  if (!mounted) {
-    return <CircularProgress />;
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await fetchPosts();
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+      }
+    };
+    fetchData();
+  }, [page, postsPerPage, appliedSearch, appliedTags]);
+
+  if (!mounted) return <CircularProgress />;
 
   return (
     <Box
@@ -211,7 +243,7 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
                 color: "rgba(0, 0, 0, 1)",
               }}
             >
-              {user ? "My Code Templates" : "Code Templates"}{" "}
+              Code Templates{" "}
             </Typography>
 
             {auth && (
@@ -245,8 +277,6 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
             searchTags={searchTags}
             onClick={handleSearchClick}
             onTagsKeyDown={handleTagsKeyDown}
-            sortBy={sortBy}
-            onSortChange={handleSortChange}
             tags={tags}
             onTagDelete={handleTagDelete}
             postsPerPage={postsPerPage}
