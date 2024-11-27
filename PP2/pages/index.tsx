@@ -9,9 +9,31 @@ import {
   Grid,
   Paper,
 } from "@mui/material";
-import { features } from "@/constants/constants";
+import blurredCode from "@/assets/images/blurred_code.png";
+import blurredBlog from "@/assets/images/blurred_blog.png";
 
 export default function HomePage() {
+
+  const features = [
+    {
+      title: "Blog Posts",
+      description: "Share your thoughts with the world",
+      link: "/posts",
+      image: blurredBlog.src
+    },
+    {
+      title: "Coding",
+      description: "Write and test some code snippets",
+      link: "/coding",
+      image: blurredCode.src
+    },
+    {
+      title: "Code Templates",
+      description: "Try someone's code and make a copy",
+      link: "/code-templates",
+      image: blurredCode.src
+    }
+]
   return (
     <>
       <Paper
@@ -22,17 +44,19 @@ export default function HomePage() {
           Welcome to Scriptorium
         </Typography>
         <Typography variant="h6" className="max-w-xl mb-6">
-          Frobnicate snizzleflorp zibble wibblefrock trundleplank
-          shizzlegrabble. Plinkadinkle fragglestaff wobberfribble glornicksnap
-          prinkleflorps.
+          Inspired by the ancient concept of a scriptorium, a place where manuscripts were crafted and preserved, Scriptorium modernizes 
+          this idea for the digital age. Whether you’re testing a quick snippet or building a reusable code example, 
+          Scriptorium is what you need to bring your ideas to life.
         </Typography>
+
         <Button
           variant="contained"
           color="secondary"
           size="large"
           className="rounded-full"
+          href={"/coding"}
         >
-          Get Started
+          Start Coding
         </Button>
       </Paper>
 
@@ -69,7 +93,7 @@ export default function HomePage() {
                     color="primary"
                     href={feature.link}
                   >
-                    Learn More
+                    Go Now
                   </Button>
                 </CardContent>
               </Card>
