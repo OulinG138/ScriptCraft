@@ -1,3 +1,3 @@
 FROM bash
 
-CMD bash ./script.sh < ./input.txt
+CMD dos2unix ./script.sh && bash ./script.sh < ./input.txt

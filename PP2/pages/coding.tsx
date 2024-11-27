@@ -67,6 +67,7 @@ export default function Coding() {
     setIsExecuting(true)
     let res = await API.code.execute(reqBody)
     var out = null
+
     if (res.status === 203) {
       out = res.data.error
     } else  {
@@ -108,7 +109,6 @@ export default function Coding() {
   };
 
   const toggleDialogue = () =>    {
-    console.log(auth)
     setTempTags([])
     setDialogue(!dialogueToggle);
   }
@@ -142,6 +142,7 @@ export default function Coding() {
     if (template.status === 200)    {
         const data = template.data.result
         setCode(data.codeContent)
+        setLanguage(data.language)
     }   else    {
         router.push("/coding")
     }

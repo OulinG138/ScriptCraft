@@ -197,7 +197,7 @@ export default function Coding() {
     }
   }
 
-  const fillDetails = (data: {codeContent: string, title: string, explanation: string, tags: string[],
+  const fillDetails = (data: {codeContent: string, title: string, explanation: string, tags: string[], language: string
                               id: number, authorId: string, parentTemplateId: string, createdAt: string, updatedAt: string,
                               firstName: string, lastName: string
   }) => {
@@ -216,7 +216,7 @@ export default function Coding() {
     setId(data.id);
     setIsOwner(auth.user?.id === data.authorId);
     setAuthor(data.firstName + " " + data.lastName + " " + data.authorId.slice(-5, ));
-    console.log(data)
+    setLanguage(data.language)
 
     setParentId((data.parentTemplateId === null) ? "" : window.btoa(data.parentTemplateId));
     const created_local = ((data.createdAt.split("T")[0] + " " + data.createdAt.split("T")[1].split(".")[0] + " UTC")).toString().split(" ")[0];
@@ -494,7 +494,7 @@ export default function Coding() {
                       <Select
                       labelId="demo-simple-select-filled-label"
                       onChange={(e) => setLanguage(e.target.value as string)}
-                      defaultValue={"python"}
+                      value={language}
                     >
                       {languages.map((language) => (
                         <MenuItem key={language} value={language}>
