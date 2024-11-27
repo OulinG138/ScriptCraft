@@ -102,10 +102,9 @@ const util = require('node:util');
 const exec = util.promisify(require('node:child_process').exec);
 
 const MEMORY = "512m"
-const TIMEOUT = "2"
+const TIMEOUT = "5"
 const TRASH = "/dev/null"
 
-// TODO: fails if lots of prints
 export default async function handler(req, res) {
     if (req.method === "POST")  {
         const {content, language, input} = req.body
@@ -129,7 +128,7 @@ export default async function handler(req, res) {
             var { stdout} = await exec("docker container create --memory " + MEMORY + " -i -t " + language);
             const container = stdout.replace("\n", "")
 
-            var {stdout} = await exec("docker cp " + path + extensionLookup[language] + " " + container + ":script" + extensionLookup[language] + " > " + TRASH + " && " + 
+            var {stdout} = await exec("docker cp " + path + extensionLookup[language] + " " + container + ":script" + extensionLookup[language] + " > " + TRASH + "  && " + 
                 "docker cp " + path + ".txt " + container + ":input.txt > " + TRASH + " && " + 
                 "docker start " + container + " > " + TRASH + " && " + 
                 "docker container stop -t " + TIMEOUT + " " + container + " > " + TRASH + " && " + 
