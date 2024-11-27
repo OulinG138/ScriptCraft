@@ -52,6 +52,7 @@ interface Comment {
   repliesCount: number;
   userRating?: Rating;
   author: {firstName: string, lastName: string};
+  showReplies?: boolean;
 }
 
 const PostDetailPage = () => {
@@ -74,10 +75,10 @@ const PostDetailPage = () => {
   const [reportExplanation, setReportExplanation] = useState("");
   const [reportTarget, setReportTarget] = useState<{ type: "post" | "comment"; id: number } | null>(null);
 
-  const [showReplies, setShowReplies] = useState<{ parentCommentId: number; replies: Comment[] }>({ parentCommentId: 0, replies: [] });
-  const [repliesPage, setRepliesPage] = useState(1);
+  const [showReplies, setShowReplies] = useState<{ [id: number]: {comments: Comment[], repliesPage: number, totalReplies: number} }>({});
+  // const [repliesPage, setRepliesPage] = useState(1);
   const repliesPerPage = 5;
-  const [totalRepliesPages, setTotalRepliesPages] = useState(0);
+  // const [totalRepliesPages, setTotalRepliesPages] = useState(0);
 
   const [createPostDialogOpen, setCreatePostDialogOpen] = useState(false);
   const [editPost, setEditPost] = useState({
@@ -204,18 +205,20 @@ const PostDetailPage = () => {
   const fetchReplies = async (commentId: number) => {
     try {
       const response = await API.blogpost.getPaginatedReplies(auth.accessToken, commentId, 1, repliesPerPage);
-      setShowReplies({parentCommentId: commentId, replies: response.data.replies});
-      setRepliesPage(1);
-      setTotalRepliesPages(response.data.totalPages);
+      setShowReplies((prev) => ({
+        ...prev,
+        [commentId]: {comments: response.data.replies, repliesPage: response.data.page, totalReplies: response.data.totalReplies},
+      }));
     } catch (error) {
       console.error("Error fetching comments", error);
     }
   }
 
-  const handleHideReplies = () => {
-    setShowReplies({parentCommentId: 0, replies: []});
-    setRepliesPage(1);
-    setTotalRepliesPages(0);
+  const handleHideReplies = (commentId: number) => {
+    setShowReplies((prev) => {
+      const { [commentId]: _, ...rest } = prev;
+      return rest;
+    });
   }
 
   const handleReply = (commentId: number) => {
@@ -227,7 +230,110 @@ const PostDetailPage = () => {
     }
   };
 
-  const handleReplySubmit = async (parentCommentId: number) => {
+  const renderComment = (type: "comment" | "reply", comment: Comment) => {
+    return (
+    <ListItem
+    key={comment.id}
+    sx={{
+      borderTop: comment.id === comments[0].id ? 'none' : '1px solid #e0e0e0',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+    }}
+  >
+    {/* Content */}
+    <Box className="w-full flex justify-between items-center">
+    <ListItemText key={comment.id} primary={comment.content} />
+      {comment.isHidden && (
+        <Box className="text-red-500 flex items-center">
+          <FlagIcon className="text-2xl pr-2"/>
+          <Typography variant="body1">HIDDEN</Typography>
+        </Box>
+      )}
+    </Box>
+
+    {/* Metadata */}
+    <Typography variant="body2" color="textSecondary">
+      By {`${comment.author.firstName} ${comment.author.lastName} ${comment.authorId.slice(-5)}`} | Posted: {new Date(comment.createdAt).toLocaleDateString()}  | Last Updated: {new Date(comment.updatedAt).toLocaleDateString()}
+    </Typography>
+
+    {/* Buttons */}
+    <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
+      <Button
+        color="primary"
+        size="small"
+        className={`w-8'}`} 
+        sx={{ minWidth: 'auto' }}
+        onClick={() => handleReply(comment.id)}
+      >Reply</Button>
+
+      { comment.repliesCount > 0 &&
+      (!(comment.id in showReplies) ? (
+      <>
+        <Button
+        color="primary"
+        size="small"
+        onClick={() => {const x = async() => await fetchReplies(comment.id); x();}}
+        >Show Replies</Button>
+      </>): (<>
+        <Button
+          color="primary"
+          size="small"
+          onClick={() => handleHideReplies(comment.id)}
+        >Hide Replies</Button>
+        </>))
+      } 
+      <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='comment' element={comment} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} onDelete={handleDelete}></RatingsButtons>
+    </Box>
+
+    {/* Reply Box */}
+    {newReply.parentCommentId === comment.id && (
+    <Container style={{ marginTop: '5px' }}>
+      <TextField
+        label="Write your reply"
+        rows={4}
+        value={newReply.content}
+        onChange={(e) => setNewReply(prevState => ({ ...prevState, content: e.target.value }))}
+        fullWidth
+      />
+      <Button
+        color="primary"
+        onClick={async () => {
+          await handleReplySubmit(type, comment.id);
+        }}
+      >
+        Submit
+      </Button>
+      <Button
+        color="primary"
+        onClick={handleCancelReply}
+      >
+        Cancel
+      </Button>
+    </Container>
+    )}
+
+    {/* Replies */}
+    { comment.id in showReplies && (
+      (showReplies[comment.id].comments.length > 0) && (
+        <Container style={{ marginTop: '5px' }}>
+          {showReplies[comment.id].comments.map((reply) => (renderComment('reply', reply)))}
+          {showReplies[comment.id].comments.length < showReplies[comment.id].totalReplies &&
+          (<Button
+          color="primary"
+          size="small"
+          onClick={() => handleMoreReplies(comment.id)}
+          >
+            More Replies
+          </Button>)}
+        </Container>
+      )
+    )}
+
+  </ListItem>)
+  }
+
+  const handleReplySubmit = async (type: 'comment' | 'reply', parentCommentId: number) => {
     if (!newReply.content || !post) return;
     if (!auth?.accessToken) {
       console.error("Access token is missing.");
@@ -320,7 +426,7 @@ const PostDetailPage = () => {
     } finally {
       fetchPost();
       fetchComments(page);
-      fetchReplies(showReplies.parentCommentId);
+      // fetchReplies(targetType, showReplies.parentCommentId);
       setIsVoting(false);
     }
   };
@@ -352,16 +458,20 @@ const PostDetailPage = () => {
     setDeleteTargetType(targetType);
   }
 
-  const handleMoreReplies = async() => {
+  const handleMoreReplies = async(commentId: number) => {
     try {
-      const parentCommentId = showReplies.parentCommentId;
-      const response = await API.blogpost.getPaginatedReplies(auth.accessToken, parentCommentId, repliesPage + 1, repliesPerPage);
-      setShowReplies((prevState) => ({
-        ...prevState,
-        replies: prevState.replies.concat(response.data.replies),
-      }));      
-      setRepliesPage(repliesPage + 1)  
-      setTotalRepliesPages(response.data.totalRepliesPages);
+      const response = await API.blogpost.getPaginatedReplies(auth.accessToken, commentId, showReplies[commentId].repliesPage + 1, repliesPerPage);
+      setShowReplies((prev) => ({
+        ...prev,
+        [commentId]: {
+          ...prev[commentId], // Preserve existing data for this comment
+          comments: [...(prev[commentId]?.comments || []), ...response.data.replies], // Append new replies
+          repliesPage: response.data.page, // Update the current page
+          totalReplies: response.data.totalPages, // Update the total pages of replies
+        },
+      }));
+      // setRepliesPage(repliesPage + 1)  
+      // setTotalRepliesPages(response.data.totalRepliesPages);
     } catch (error) {
       console.error("Error fetching comments", error);
     }
@@ -499,129 +609,7 @@ const PostDetailPage = () => {
 
         {comments.length > 0 ? (
           <List className='w-full flex flex-col'>
-            {comments.map((comment) => (
-            <ListItem
-              key={comment.id}
-              sx={{
-                borderTop: comment.id === comments[0].id ? 'none' : '1px solid #e0e0e0',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-              }}
-            >
-              {/* Content */}
-              <Box className="w-full flex justify-between items-center">
-              <ListItemText key={comment.id} primary={comment.content} />
-                {comment.isHidden && (
-                  <Box className="text-red-500 flex items-center">
-                    <FlagIcon className="text-2xl pr-2"/>
-                    <Typography variant="body1">HIDDEN</Typography>
-                  </Box>
-                )}
-              </Box>
-
-              {/* Metadata */}
-              <Typography variant="body2" color="textSecondary">
-                By {`${comment.author.firstName} ${comment.author.lastName} ${comment.authorId.slice(-5)}`} | Posted: {new Date(comment.createdAt).toLocaleDateString()}  | Last Updated: {new Date(comment.updatedAt).toLocaleDateString()}
-              </Typography>
-
-              {/* Buttons */}
-              <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                <Button
-                  color="primary"
-                  size="small"
-                  className={`w-8'}`} 
-                  sx={{ minWidth: 'auto' }}
-                  onClick={() => handleReply(comment.id)}
-                >Reply</Button>
-
-                { comment.repliesCount > 0 &&
-                (showReplies.parentCommentId !== comment.id ? (
-                <>
-                  <Button
-                  color="primary"
-                  size="small"
-                  onClick={() => fetchReplies(comment.id)}
-                  >Show Replies</Button></>):
-                  (<>
-                  <Button
-                    color="primary"
-                    size="small"
-                    onClick={handleHideReplies}
-                  >Hide Replies</Button>
-                  </>))
-                } 
-                <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='comment' element={comment} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog} onDelete={handleDelete}></RatingsButtons>
-              </Box>
-
-              {/* Reply Box */}
-              {newReply.parentCommentId === comment.id && (
-              <Container style={{ marginTop: '5px' }}>
-                <TextField
-                  label="Write your reply"
-                  rows={4}
-                  value={newReply.content}
-                  onChange={(e) => setNewReply(prevState => ({ ...prevState, content: e.target.value }))}
-                  fullWidth
-                />
-                <Button
-                  color="primary"
-                  onClick={async () => {
-                    await handleReplySubmit(comment.id);
-                  }}
-                >
-                  Submit
-                </Button>
-                <Button
-                  color="primary"
-                  onClick={handleCancelReply}
-                >
-                  Cancel
-                </Button>
-              </Container>
-              )}
-
-              {/* Replies */}
-              {showReplies.parentCommentId === comment.id && (
-                showReplies.replies.length > 0 ? (
-                  <Container style={{ marginTop: '5px' }}>
-                    {showReplies.replies.map((reply) => (
-                      <ListItem key={reply.id} className="flex -space-y-2 flex-col items-start w-full" sx={{borderTop: '1px solid #e0e0e0'}}>
-                        <Box className="box w-full">
-                        <Box className="w-full flex justify-between items-center">
-                          <ListItemText key={reply.id} primary={reply.content} />
-                            {reply.isHidden && (
-                              <Box className="text-red-500 flex items-center">
-                                <FlagIcon className="text-2xl pr-2"/>
-                                <Typography variant="body1">HIDDEN</Typography>
-                              </Box>
-                            )}
-                          </Box>
-                            <Typography variant="body2" color="textSecondary">
-                            By {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`} | Posted: {new Date(reply.createdAt).toLocaleDateString()}  | Last Updated: {new Date(reply.updatedAt).toLocaleDateString()}
-                            </Typography>
-                            <RatingsButtons isVoting={isVoting} userId={auth.user?.id || null} targetType='comment' element={reply} onReport={handleReport} onVote={handleVote} openEditPostDialog={openEditPostDialog}onDelete={handleDelete} />
-                        </Box>
-                      </ListItem>
-                    ))}
-                    {repliesPage < totalRepliesPages &&
-                    (<Button
-                    color="primary"
-                    size="small"
-                    onClick={() => handleMoreReplies()}
-                    >
-                      More Replies
-                    </Button>)}
-                  </Container>
-                ) : (
-                  <Typography variant="body2" color="textSecondary" style={{ marginTop: '5px' }}>
-                    No replies
-                  </Typography>
-                )
-              )}
-
-            </ListItem>
-            ))}
+            {comments.map((comment) => renderComment('comment', comment))}
           </List>
         ) : (
           <Typography variant="body1" textAlign="center" mt={3}>

@@ -85,11 +85,13 @@ export default async function handler(req, res) {
                 lastName: true,
               },
             },
+            replies: true,
           }
         });
 
         results = results.map(comment => ({
           ...comment,
+          repliesCount: comment.replies.length,
           ratings: undefined,
           userRating: comment.ratings?.length ? comment.ratings[0] : undefined,
         }));
