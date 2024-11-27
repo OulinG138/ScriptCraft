@@ -123,7 +123,7 @@ const CreatePostDialog = ({
               onChange={(e) => onChange("content", e.target.value)}
             />
             <TextField
-              label="Tags"
+              label="Tags (press enter to add)"
               variant="outlined"
               size="small"
               fullWidth
@@ -145,7 +145,7 @@ const CreatePostDialog = ({
             </Box>
 
             <TextField
-              label="Code Template Links"
+              label="Code Template Links (press enter to add)"
               fullWidth
               variant="outlined"
               size="small"
