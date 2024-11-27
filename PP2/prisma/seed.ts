@@ -61,16 +61,16 @@ int main() {
 ];
 
 const tags = [
-  "Algorithms",
-  "Data Structures",
-  "Web Development",
-  "Mobile Development",
-  "Machine Learning",
-  "Database",
-  "Security",
-  "Cloud Computing",
-  "DevOps",
-  "Programming Basics",
+  "algorithms",
+  "data",
+  "web",
+  "mobile",
+  "machine",
+  "database",
+  "security",
+  "cloud",
+  "devops",
+  "programming",
 ];
 
 async function main() {
