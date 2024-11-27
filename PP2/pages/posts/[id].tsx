@@ -402,13 +402,14 @@ const PostDetailPage = () => {
       setOpenSnackbar(true);
       return
     }
+    let rating: Rating;
     try {
       if (!auth.accessToken) {
         return
       }
       if (!target.userRating) {
         setIsVoting(true);
-        await API.blogpost.postRating(auth.accessToken, {targetType, targetId: target.id, value})
+        rating = await API.blogpost.postRating(auth.accessToken, {targetType, targetId: target.id, value})
       } else if (target.userRating.value === value) {
         setIsVoting(true);
         await API.blogpost.deleteRating(auth.accessToken, target.userRating.id)
@@ -419,14 +420,30 @@ const PostDetailPage = () => {
       } else if (target.userRating.value !== value) {
         setIsVoting(true);
         await API.blogpost.deleteRating(auth.accessToken, target.userRating.id)
-        await API.blogpost.postRating(auth.accessToken, {targetType, targetId: target.id, value});
+        rating = await API.blogpost.postRating(auth.accessToken, {targetType, targetId: target.id, value});
       }
     } catch(error) {
       console.error("Error posting rating", error);
     } finally {
       fetchPost();
       fetchComments(page);
-      // fetchReplies(targetType, showReplies.parentCommentId);
+
+      if (targetType === "comment") {
+        const parentCommentId = (target as Comment).parentCommentId
+        if (parentCommentId && parentCommentId !== 0 ) {
+          setShowReplies((prev) => ({
+            ...prev, // Keep the rest of the state unchanged
+            [parentCommentId]: {
+              ...prev[parentCommentId], // Keep the other properties of this object
+              comments: prev[parentCommentId].comments.map((comment) =>
+                comment.id === target.id // Check if this is the comment to update
+                  ? { ...comment, userRating: rating }
+                  : comment // Keep other comments unchanged
+              ),
+            },
+          }));
+        }
+      }
       setIsVoting(false);
     }
   };

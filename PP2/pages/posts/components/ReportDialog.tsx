@@ -19,7 +19,7 @@ const ReportDialog = ({
 }: CreatePostDialogProps) => {
 
   return (
-    <Dialog open={openReportDialog} onClose={() => setOpenReportDialog(false)}
+    <Dialog open={openReportDialog}
     maxWidth="sm"
     fullWidth>
     <DialogTitle>Report</DialogTitle>
@@ -39,7 +39,7 @@ const ReportDialog = ({
         />
     </DialogContent>
     <DialogActions>
-        <Button onClick={() => setOpenReportDialog(false)} color="primary">
+        <Button onClick={() => {setReportExplanation("");setOpenReportDialog(false)}} color="primary">
         Cancel
         </Button>
         <Button onClick={handleSubmitReport} color="primary">

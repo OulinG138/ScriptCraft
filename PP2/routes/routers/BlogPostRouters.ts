@@ -144,8 +144,11 @@ const routers = {
       getJWTHeader(accessToken)
     ),
 
-  postRating: async (accessToken: string, payload: object) =>
-    authAxiosInstance.post(`/ratings`, payload, getJWTHeader(accessToken)),
+  postRating: async (accessToken: string, payload: object) => {
+    const response = await authAxiosInstance.post(`/ratings`, payload, getJWTHeader(accessToken))
+    return response.data
+  }
+  ,
 
   deleteRating: async (accessToken: string, ratingId: number) =>
     authAxiosInstance.delete(`/ratings/${ratingId}`, getJWTHeader(accessToken)),
