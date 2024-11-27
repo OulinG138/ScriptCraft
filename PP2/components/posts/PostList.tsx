@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography, CircularProgress } from "@mui/material";
-import { Post } from "../../../components/interfaces"
-import FlagIcon from '@mui/icons-material/Flag';
+import { Post } from "../interfaces";
+import FlagIcon from "@mui/icons-material/Flag";
 
 interface PostListProps {
   isLoading: boolean;
@@ -11,9 +11,14 @@ interface PostListProps {
 
 const PostList = ({ isLoading, posts, onPostClick }: PostListProps) => (
   <Box sx={{ display: "grid", gridTemplateColumns: "1fr", gap: 3 }}>
-    {isLoading && <CircularProgress/>}
+    {isLoading && <CircularProgress />}
 
-    {(!isLoading && posts.length === 0) && <Typography variant="h5"sx={{ textAlign: 'center' }}> No Posts </Typography>}
+    {!isLoading && posts.length === 0 && (
+      <Typography variant="h5" sx={{ textAlign: "center" }}>
+        {" "}
+        No Posts{" "}
+      </Typography>
+    )}
 
     {posts.map((post) => (
       <Box
@@ -27,7 +32,7 @@ const PostList = ({ isLoading, posts, onPostClick }: PostListProps) => (
         }}
         onClick={() => onPostClick(post.id)}
       >
-        <Box className="flex justify-between items-center"> 
+        <Box className="flex justify-between items-center">
           <Typography variant="h6">{post.title}</Typography>
 
           {post.isHidden && (
@@ -42,11 +47,15 @@ const PostList = ({ isLoading, posts, onPostClick }: PostListProps) => (
           {post.description}
         </Typography>
 
-        <Typography variant="body2" color="textSecondary" >
-            By {`${post.author.firstName} ${post.author.lastName} ${post.authorId.slice(-5)}`} | Posted: {new Date(post.createdAt).toLocaleDateString()}  | Last Updated: {new Date(post.updatedAt).toLocaleDateString()} | Rating: {post.ratingCount > 0 ? `+${post.ratingCount}` : `${post.ratingCount}`}
+        <Typography variant="body2" color="textSecondary">
+          By{" "}
+          {`${post.author.firstName} ${post.author.lastName} ${post.authorId.slice(-5)}`}{" "}
+          | Posted: {new Date(post.createdAt).toLocaleDateString()} | Last
+          Updated: {new Date(post.updatedAt).toLocaleDateString()} | Rating:{" "}
+          {post.ratingCount > 0
+            ? `+${post.ratingCount}`
+            : `${post.ratingCount}`}
         </Typography>
-        
-
       </Box>
     ))}
   </Box>

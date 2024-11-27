@@ -12,9 +12,9 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 
-import CreatePostDialog from "./components/CreatePostDialog";
-import SearchBar from "./components/PostsSearchBar";
-import PostList from "./components/PostList";
+import CreatePostDialog from "../../components/posts/CreatePostDialog";
+import SearchBar from "../../components/posts/PostsSearchBar";
+import PostList from "../../components/posts/PostList";
 import Alert from "../../components/Alert";
 
 import { Post } from "../../components/interfaces";
@@ -98,7 +98,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
         );
         setPosts(response.data.posts);
         setTotalPosts(response.data.totalPosts);
-        console.log('fetched posts:', response.data.posts);
+        console.log("fetched posts:", response.data.posts);
       }
     } catch (error) {
       console.error("Error fetching posts", error);
@@ -129,10 +129,10 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       try {
         await fetchPosts();
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.error("Error fetching posts:", error);
       }
     };
-    fetchData()
+    fetchData();
   }, [page, sortBy, tags, postsPerPage]);
 
   // search handlers

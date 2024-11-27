@@ -10,8 +10,8 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import { useRouter } from "next/router";
-import TemplateList from "./components/TemplateList";
-import TemplatesSearchBar from "./components/TemplatesSearchBar";
+import TemplateList from "../../components/templates/TemplateList";
+import TemplatesSearchBar from "../../components/templates/TemplatesSearchBar";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
 
@@ -136,10 +136,10 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
       try {
         await fetchPosts();
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.error("Error fetching posts:", error);
       }
     };
-    fetchData()
+    fetchData();
   }, [page, sortBy, tags, postsPerPage]);
 
   // search handlers
