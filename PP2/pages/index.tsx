@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import blurredCode from "@/assets/images/blurred_code.png";
 import blurredBlog from "@/assets/images/blurred_blog.png";
+import blurredTemplate from "@/assets/images/blurred_template.png";
 
 export default function HomePage() {
 
@@ -31,7 +32,7 @@ export default function HomePage() {
       title: "Code Templates",
       description: "Try someone's code and make a copy",
       link: "/code-templates",
-      image: blurredCode.src
+      image: blurredTemplate.src
     }
 ]
   return (
