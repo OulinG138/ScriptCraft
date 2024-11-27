@@ -234,7 +234,7 @@ const PostDetailPage = () => {
   const renderComment = (type: "comment" | "reply", comment: Comment) => {
     console.log(showReplies)
     return (
-    <ListItem
+    <Container
     key={comment.id}
     sx={{
       borderTop: comment.id === comments[0].id ? 'none' : '1px solid #e0e0e0',
@@ -332,7 +332,7 @@ const PostDetailPage = () => {
       )
     )}
 
-  </ListItem>)
+  </Container>)
   }
 
   const handleReplySubmit = async (type: 'comment' | 'reply', target: Comment) => {
