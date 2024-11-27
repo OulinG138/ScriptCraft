@@ -1,4 +1,5 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
+import toast from "react-hot-toast";
 import {
   Box,
   Button,
@@ -10,12 +11,10 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import { useRouter } from "next/router";
-import TemplateList from "./components/TemplateList";
-import TemplatesSearchBar from "./components/TemplatesSearchBar";
+import TemplateList from "@/components/templates/TemplateList";
+import TemplatesSearchBar from "@/components/templates/TemplatesSearchBar";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
-
-import Alert from "../../components/Alert";
 
 interface Post {
   id: number;
@@ -32,64 +31,54 @@ interface Post {
 }
 
 const TemplatesPage = ({ user = false }: { user?: boolean }) => {
-  const LOCAL_STORAGE_KEY = user
-    ? "userTemplateSearchState"
-    : "templateSearchState";
-
-  // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
 
-  // posts states
   const [isLoading, setIsLoading] = useState(true);
   const [posts, setPosts] = useState<Post[]>([]);
   const [totalPosts, setTotalPosts] = useState(0);
   const [page, setPage] = useState(1);
 
-  // search states
   const [search, setSearch] = useState({ title: "", explanation: "" });
+  const [appliedSearch, setAppliedSearch] = useState({
+    title: "",
+    explanation: "",
+  });
   const [searchTags, setSearchTags] = useState("");
   const [tags, setTags] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("ratings");
+  const [appliedTags, setAppliedTags] = useState<string[]>([]);
   const [postsPerPage, setPostsPerPage] = useState(5);
+  const [mounted, setMounted] = useState(false);
 
-  // snackbar alert states
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-
-  // post handlers
   const fetchPosts = async () => {
     try {
       setIsLoading(true);
       let response;
       if (user) {
         if (!auth.accessToken) {
-          setSnackbarMessage("Error: Please log out and try again");
-          setOpenSnackbar(false);
+          toast.error("Error: Please log out and try again");
           return;
         }
         response = await API.code.getUserTemplates(
           auth.accessToken,
-          search.title,
-          search.explanation,
-          tags,
+          appliedSearch.title,
+          appliedSearch.explanation,
+          appliedTags,
           page,
           postsPerPage
         );
-        setPosts(response.data.templates);
-        setTotalPosts(response.data.totalPosts);
       } else {
         response = await API.code.getPaginatedTemplates(
           auth.accessToken,
-          search.title,
-          search.explanation,
-          tags,
+          appliedSearch.title,
+          appliedSearch.explanation,
+          appliedTags,
           page,
           postsPerPage
         );
-        setPosts(response.data.templates);
-        setTotalPosts(response.data.totalPosts);
       }
+      setPosts(response.data.templates);
+      setTotalPosts(response.data.totalPosts);
     } catch (error) {
       console.error("Error fetching posts", error);
     } finally {
@@ -123,29 +112,39 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     setPage(value);
   };
 
-  const handleSortChange = (event: SelectChangeEvent<string>) => {
-    setSortBy(event.target.value);
-  };
-
   const handlePostClick = (postId: number) => {
     router.push(`/code-template?id=${window.btoa(String(postId))}`);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        await fetchPosts();
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-      }
+  const updateURL = () => {
+    const queryParams = {
+      ...router.query,
+      title: search.title || undefined,
+      explanation: search.explanation || undefined,
+      tags: tags.length ? tags.join(",") : undefined,
+      page: page !== 1 ? page : undefined,
+      postsPerPage: postsPerPage !== 5 ? postsPerPage : undefined,
     };
-    fetchData()
-  }, [page, sortBy, tags, postsPerPage]);
 
-  // search handlers
-  const handleSearchClick = async () => {
+    Object.keys(queryParams).forEach(
+      (key) => queryParams[key] === undefined && delete queryParams[key]
+    );
+
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: queryParams,
+      },
+      undefined,
+      { shallow: true }
+    );
+  };
+
+  const handleSearchClick = () => {
     setPage(1);
-    await fetchPosts();
+    setAppliedSearch(search);
+    setAppliedTags(tags);
+    updateURL();
   };
 
   const handleSearchKeyDown = (
@@ -156,115 +155,167 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
     }
   };
 
-  const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Load state from sessionStorage once mounted
   useEffect(() => {
     if (mounted) {
-      const savedState = JSON.parse(
-        sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
-      );
-      setSearch(savedState.search || { title: "", explanation: "" });
-      setTags(savedState.tags || []);
-      setSortBy(savedState.sortBy || "ratings");
-      setPage(savedState.page || 1);
-      setPostsPerPage(savedState.postsPerPage || 5);
+      const {
+        title = "",
+        explanation = "",
+        tags: queryTags = "",
+        page: queryPage = "1",
+        postsPerPage: queryPostsPerPage = "5",
+      } = router.query;
+
+      const newSearch = {
+        title: Array.isArray(title) ? title[0] : title,
+        explanation: Array.isArray(explanation) ? explanation[0] : explanation,
+      };
+
+      const newTags = queryTags
+        ? (Array.isArray(queryTags) ? queryTags[0] : queryTags)
+            .split(",")
+            .filter(Boolean)
+        : [];
+
+      const newPage =
+        parseInt(Array.isArray(queryPage) ? queryPage[0] : queryPage) || 1;
+      const newPostsPerPage =
+        parseInt(
+          Array.isArray(queryPostsPerPage)
+            ? queryPostsPerPage[0]
+            : queryPostsPerPage
+        ) || 5;
+
+      setSearch(newSearch);
+      setAppliedSearch(newSearch);
+      setTags(newTags);
+      setAppliedTags(newTags);
+      setPage(newPage);
+      setPostsPerPage(newPostsPerPage);
     }
-  }, [mounted]);
+  }, [mounted, router.query]);
 
-  // // Save state to sessionStorage whenever it changes
-  // useEffect(() => {
-  //   if (mounted) {
-  //     sessionStorage.setItem(
-  //       LOCAL_STORAGE_KEY,
-  //       JSON.stringify({ search, tags, sortBy, page, postsPerPage })
-  //     );
-  //   }
-  // }, [search, tags, sortBy, page, postsPerPage, mounted]);
+  useEffect(() => {
+    if (mounted) {
+      updateURL();
+    }
+  }, [page, postsPerPage]);
 
-  // Avoid rendering the component until mounted
-  if (!mounted) {
-    return <CircularProgress />;
-  }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await fetchPosts();
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+      }
+    };
+    fetchData();
+  }, [page, postsPerPage, appliedSearch, appliedTags]);
+
+  if (!mounted) return <CircularProgress />;
 
   return (
-    <Container sx={{ mb: 5, mt: 5 }}>
-      <Box sx={{ display: "flex", flexDirection: "row" }}>
-        <Typography
-          variant="h4"
-          className="pb-5"
-          sx={{ whiteSpace: "nowrap", width: "auto" }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "background.default",
+        py: 4,
+      }}
+    >
+      <Container>
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 2,
+            bgcolor: "background.paper",
+            boxShadow: 1,
+          }}
         >
-          {user ? "My Code Templates" : "Code Templates"}{" "}
-        </Typography>
-
-        {auth && (
-          <Box
-            sx={{
-              height: "100%",
-              display: "flex",
-              width: { xs: "100%", sm: "100%", md: "auto" },
-              flexGrow: { md: 1, xs: 0, sm: 0 },
-              justifyContent: "flex-end",
-            }}
-          >
-            <Button
-              variant="contained"
-              onClick={() => router.push("/coding")}
-              sx={{ whiteSpace: "nowrap", width: "auto" }}
+          <Box sx={{ display: "flex", flexDirection: "row", mb: 3 }}>
+            <Typography
+              variant="h4"
+              sx={{
+                whiteSpace: "nowrap",
+                width: "auto",
+                color: "rgba(0, 0, 0, 1)",
+              }}
             >
-              <EditIcon sx={{ pr: 1 }}> </EditIcon>
-              Create Template
-            </Button>
+              Code Templates{" "}
+            </Typography>
+
+            {auth && (
+              <Box
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  width: { xs: "100%", sm: "100%", md: "auto" },
+                  flexGrow: { md: 1, xs: 0, sm: 0 },
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Button
+                  variant="contained"
+                  onClick={() => router.push("/coding")}
+                  sx={{ whiteSpace: "nowrap", width: "auto" }}
+                >
+                  <EditIcon sx={{ pr: 1 }}> </EditIcon>
+                  Create Template
+                </Button>
+              </Box>
+            )}
           </Box>
-        )}
-      </Box>
 
-      <TemplatesSearchBar
-        auth={auth}
-        search={search}
-        setSearch={setSearch}
-        onKeyDown={handleSearchKeyDown}
-        onTagsChange={setSearchTags}
-        searchTags={searchTags}
-        onClick={handleSearchClick}
-        onTagsKeyDown={handleTagsKeyDown}
-        sortBy={sortBy}
-        onSortChange={handleSortChange}
-        tags={tags}
-        onTagDelete={handleTagDelete}
-        postsPerPage={postsPerPage}
-        onPostsPerPageChange={onPostsPerPageChange}
-      />
+          <TemplatesSearchBar
+            auth={auth}
+            search={search}
+            setSearch={setSearch}
+            onKeyDown={handleSearchKeyDown}
+            onTagsChange={setSearchTags}
+            searchTags={searchTags}
+            onClick={handleSearchClick}
+            onTagsKeyDown={handleTagsKeyDown}
+            tags={tags}
+            onTagDelete={handleTagDelete}
+            postsPerPage={postsPerPage}
+            onPostsPerPageChange={onPostsPerPageChange}
+          />
 
-      <Box className="mt-5">
-        <TemplateList
-          isLoading={isLoading}
-          posts={posts}
-          onPostClick={handlePostClick}
-        />
-      </Box>
+          <Box sx={{ mt: 3 }}>
+            <TemplateList
+              isLoading={isLoading}
+              posts={posts}
+              onPostClick={handlePostClick}
+            />
+          </Box>
 
-      {posts.length > 0 && (
-        <Pagination
-          sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}
-          count={Math.ceil(totalPosts / postsPerPage)}
-          page={page}
-          onChange={handlePageChange}
-          color="primary"
-        />
-      )}
-
-      <Alert
-        message={snackbarMessage}
-        openSnackbar={openSnackbar}
-        setOpenSnackbar={setOpenSnackbar}
-      />
-    </Container>
+          {posts.length > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+              <Pagination
+                sx={{
+                  "& .MuiPaginationItem-root": {
+                    color: "text.primary",
+                    "&.Mui-selected": {
+                      bgcolor: "primary.main",
+                      color: "primary.contrastText",
+                      "&:hover": {
+                        bgcolor: "primary.dark",
+                      },
+                    },
+                  },
+                }}
+                count={Math.ceil(totalPosts / postsPerPage)}
+                page={page}
+                onChange={handlePageChange}
+                color="primary"
+              />
+            </Box>
+          )}
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

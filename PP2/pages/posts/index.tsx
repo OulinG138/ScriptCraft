@@ -1,5 +1,6 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { useRouter } from "next/router";
+import toast from "react-hot-toast";
 
 import {
   Typography,
@@ -12,12 +13,11 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 
-import CreatePostDialog from "./components/CreatePostDialog";
-import SearchBar from "./components/PostsSearchBar";
-import PostList from "./components/PostList";
-import Alert from "../../components/Alert";
+import CreatePostDialog from "@/components/posts/CreatePostDialog";
+import SearchBar from "@/components/posts/PostsSearchBar";
+import PostList from "@/components/posts/PostList";
 
-import { Post } from "../../components/interfaces";
+import { Post } from "@/types/interfaces";
 
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
@@ -26,7 +26,6 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   // basic router and authentication
   const router = useRouter();
   const { auth } = useAuth();
-  const LOCAL_STORAGE_KEY = user ? "userBlogSearchState" : "blogSearchState";
 
   // posts states
   const [isLoading, setIsLoading] = useState(true);
@@ -40,8 +39,14 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     content: "",
     codeTemplate: "",
   });
+  const [appliedSearch, setAppliedSearch] = useState({
+    title: "",
+    content: "",
+    codeTemplate: "",
+  });
   const [searchTags, setSearchTags] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [appliedTags, setAppliedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("ratings");
   const [postsPerPage, setPostsPerPage] = useState(5);
 
@@ -56,12 +61,6 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     codeTemplateIds: [] as number[],
   });
 
-  // snackbar alert states
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-
-  let controller: AbortController | null = null;
-
   // post handlers
   const fetchPosts = async () => {
     try {
@@ -69,16 +68,15 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       let response;
       if (user) {
         if (!auth.accessToken) {
-          setSnackbarMessage("Error: Please log out and try again");
-          setOpenSnackbar(false);
+          toast.error("Error: Please log out and try again");
           return;
         }
         response = await API.blogpost.getUserBlogPosts(
           auth.accessToken,
-          search.title,
-          search.content,
-          search.codeTemplate,
-          tags,
+          appliedSearch.title,
+          appliedSearch.content,
+          appliedSearch.codeTemplate,
+          appliedTags,
           sortBy,
           page,
           postsPerPage
@@ -88,16 +86,17 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       } else {
         response = await API.blogpost.getPaginatedBlogPosts(
           auth.accessToken,
-          search.title,
-          search.content,
-          search.codeTemplate,
-          tags,
+          appliedSearch.title,
+          appliedSearch.content,
+          appliedSearch.codeTemplate,
+          appliedTags,
           sortBy,
           page,
           postsPerPage
         );
         setPosts(response.data.posts);
         setTotalPosts(response.data.totalPosts);
+        console.log("fetched posts:", response.data.posts);
       }
     } catch (error) {
       console.error("Error fetching posts", error);
@@ -117,28 +116,32 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
 
   const handleSortChange = (event: SelectChangeEvent<string>) => {
     setSortBy(event.target.value);
+    setPage(1);
   };
 
   const handlePostClick = (postId: number) => {
     router.push(`/posts/${window.btoa(String(postId))}`);
   };
 
+  // Fetch posts when relevant parameters change
   useEffect(() => {
     const fetchData = async () => {
       try {
         await fetchPosts();
       } catch (error) {
-        console.error('Error fetching posts:', error);
+        console.error("Error fetching posts:", error);
       }
     };
-    fetchData()
-  }, [page, sortBy, tags, postsPerPage]);
+    fetchData();
+  }, [page, sortBy, postsPerPage, appliedSearch, appliedTags]);
 
   // search handlers
   const handleSearchClick = async () => {
     console.log(search, tags);
     setPage(1);
-    await fetchPosts();
+    setAppliedSearch(search);
+    setAppliedTags(tags);
+    updateURL();
   };
 
   const handleSearchKeyDown = (
@@ -147,6 +150,33 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     if (event.key === "Enter") {
       handleSearchClick();
     }
+  };
+
+  const updateURL = () => {
+    const queryParams = {
+      ...router.query,
+      title: search.title || undefined,
+      content: search.content || undefined,
+      codeTemplate: search.codeTemplate || undefined,
+      tags: tags.length ? tags.join(",") : undefined,
+      sortBy: sortBy !== "ratings" ? sortBy : undefined,
+      page: page !== 1 ? page : undefined,
+      postsPerPage: postsPerPage !== 5 ? postsPerPage : undefined,
+    };
+
+    // Remove undefined values from queryParams
+    Object.keys(queryParams).forEach(
+      (key) => queryParams[key] === undefined && delete queryParams[key]
+    );
+
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: queryParams,
+      },
+      undefined,
+      { shallow: true }
+    );
   };
 
   // create post handlers
@@ -196,15 +226,13 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
 
   const handleCreatePostSubmit = async () => {
     if (!newPost.title || !newPost.description || !newPost.content) {
-      setSnackbarMessage("Title, description, and content are required.");
-      setOpenSnackbar(true);
+      toast.error("Title, description, and content are required.");
       return;
     }
 
     if (!auth.accessToken) {
       console.error("Access token is missing");
-      setSnackbarMessage("Error: Login again and retry");
-      setOpenSnackbar(true);
+      toast.error("Error: Login again and retry");
       return;
     }
 
@@ -212,12 +240,10 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
       await API.blogpost.postBlogPost(auth.accessToken, newPost);
       closeCreatePostDialog();
       await fetchPosts();
-      setSnackbarMessage("Post created successfully!");
-      setOpenSnackbar(true);
+      toast.success("Post created successfully!");
     } catch (error) {
       console.error("Error creating post", error);
-      setSnackbarMessage("Error: Login again and retry");
-      setOpenSnackbar(true);
+      toast.error("Error: Login again and retry");
     }
   };
 
@@ -227,31 +253,64 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
     setMounted(true);
   }, []);
 
-  // Load state from sessionStorage once mounted
+  // Initialize state from URL query parameters
   useEffect(() => {
     if (mounted) {
-      const savedState = JSON.parse(
-        sessionStorage.getItem(LOCAL_STORAGE_KEY) || "{}"
-      );
-      setSearch(
-        savedState.search || { title: "", content: "", codeTemplate: "" }
-      );
-      setTags(savedState.tags || []);
-      setSortBy(savedState.sortBy || "ratings");
-      setPage(savedState.page || 1);
-      setPostsPerPage(savedState.postsPerPage || 5);
-    }
-  }, [mounted]);
+      const {
+        title = "",
+        content = "",
+        codeTemplate = "",
+        tags: queryTags = "",
+        sortBy: querySortBy = "ratings",
+        page: queryPage = "1",
+        postsPerPage: queryPostsPerPage = "5",
+      } = router.query;
 
-  // Save state to sessionStorage whenever it changes
+      const newSearch = {
+        title: Array.isArray(title) ? title[0] : title,
+        content: Array.isArray(content) ? content[0] : content,
+        codeTemplate: Array.isArray(codeTemplate)
+          ? codeTemplate[0]
+          : codeTemplate,
+      };
+
+      const newTags = queryTags
+        ? (Array.isArray(queryTags) ? queryTags[0] : queryTags)
+            .split(",")
+            .filter(Boolean)
+        : [];
+
+      const newSortBy = Array.isArray(querySortBy)
+        ? querySortBy[0]
+        : querySortBy;
+
+      const newPage =
+        parseInt(Array.isArray(queryPage) ? queryPage[0] : queryPage) || 1;
+
+      const newPostsPerPage =
+        parseInt(
+          Array.isArray(queryPostsPerPage)
+            ? queryPostsPerPage[0]
+            : queryPostsPerPage
+        ) || 5;
+
+      setSearch(newSearch);
+      setAppliedSearch(newSearch);
+      setTags(newTags);
+      setAppliedTags(newTags);
+      setSortBy(newSortBy);
+      setPage(newPage);
+      setPostsPerPage(newPostsPerPage);
+    }
+  }, [mounted, router.query]);
+
+  // Update URL when pagination or sorting changes
   useEffect(() => {
     if (mounted) {
-      sessionStorage.setItem(
-        LOCAL_STORAGE_KEY,
-        JSON.stringify({ search, tags, sortBy, page, postsPerPage })
-      );
+      updateURL();
     }
-  }, [search, tags, sortBy, page, postsPerPage, mounted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, sortBy, postsPerPage]);
 
   // Avoid rendering the component until mounted
   if (!mounted) {
@@ -259,89 +318,129 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   }
 
   return (
-    <Container sx={{ mb: 5, mt: 5 }}>
-      <Box sx={{ display: "flex", flexDirection: "row" }}>
-        <Typography
-          variant="h4"
-          className="pb-5"
-          sx={{ whiteSpace: "nowrap", width: "auto" }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "background.default",
+        py: 4,
+      }}
+    >
+      <Container>
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 2,
+            bgcolor: "background.paper",
+            boxShadow: 1,
+          }}
         >
-          {user ? "My Blog Posts" : "Blog Posts"}{" "}
-        </Typography>
-
-        {auth && (
           <Box
             sx={{
-              height: "100%",
               display: "flex",
-              width: { xs: "100%", sm: "100%", md: "auto" },
-              flexGrow: { md: 1, xs: 0, sm: 0 },
-              justifyContent: "flex-end",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 3,
             }}
           >
-            <Button
-              variant="contained"
-              onClick={openCreatePostDialog}
-              sx={{ whiteSpace: "nowrap", width: "auto" }}
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 500,
+                color: "text.primary",
+              }}
             >
-              <EditIcon sx={{ pr: 1 }}> </EditIcon>
-              Create Post
-            </Button>
+              {user ? "My Blog Posts" : "Blog Posts"}
+            </Typography>
+
+            {auth && (
+              <Button
+                variant="contained"
+                onClick={openCreatePostDialog}
+                startIcon={<EditIcon />}
+                sx={{
+                  px: 3,
+                  py: 1,
+                  bgcolor: "primary.main",
+                  "&:hover": {
+                    bgcolor: "primary.dark",
+                  },
+                }}
+              >
+                Create Post
+              </Button>
+            )}
           </Box>
-        )}
-      </Box>
 
-      <SearchBar
-        auth={auth}
-        search={search}
-        setSearch={setSearch}
-        onKeyDown={handleSearchKeyDown}
-        onTagsChange={setSearchTags}
-        searchTags={searchTags}
-        onClick={handleSearchClick}
-        onTagsKeyDown={handleTagsKeyDown}
-        sortBy={sortBy}
-        onSortChange={handleSortChange}
-        tags={tags}
-        onTagDelete={handleTagDelete}
-        postsPerPage={postsPerPage}
-        onPostsPerPageChange={onPostsPerPageChange}
-      />
+          <Box sx={{ mb: 3 }}>
+            <SearchBar
+              auth={auth}
+              search={search}
+              setSearch={setSearch}
+              onKeyDown={handleSearchKeyDown}
+              onTagsChange={setSearchTags}
+              searchTags={searchTags}
+              onClick={handleSearchClick}
+              onTagsKeyDown={handleTagsKeyDown}
+              sortBy={sortBy}
+              onSortChange={handleSortChange}
+              tags={tags}
+              onTagDelete={handleTagDelete}
+              postsPerPage={postsPerPage}
+              onPostsPerPageChange={onPostsPerPageChange}
+            />
+          </Box>
 
-      <Box className="mt-5">
-        <PostList
-          isLoading={isLoading}
-          posts={posts}
-          onPostClick={handlePostClick}
-        />
-      </Box>
-      {posts.length > 0 && (
-        <Pagination
-          sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}
-          count={Math.ceil(totalPosts / postsPerPage)}
-          page={page}
-          onChange={handlePageChange}
-          color="primary"
-        />
-      )}
+          <Box sx={{ mt: 3 }}>
+            <PostList
+              isLoading={isLoading}
+              posts={posts}
+              onPostClick={handlePostClick}
+            />
+          </Box>
 
-      {createPostDialogOpen && (
-        <CreatePostDialog
-          dialogType="create"
-          open={createPostDialogOpen}
-          post={newPost}
-          onClose={closeCreatePostDialog}
-          onChange={handleCreatePostChange}
-          onSubmit={handleCreatePostSubmit}
-        />
-      )}
+          {posts.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                mt: 4,
+              }}
+            >
+              <Pagination
+                count={Math.ceil(totalPosts / postsPerPage)}
+                page={page}
+                onChange={handlePageChange}
+                color="primary"
+                sx={{
+                  "& .MuiPaginationItem-root": {
+                    color: "text.primary",
+                    "&.Mui-selected": {
+                      bgcolor: "primary.main",
+                      color: "primary.contrastText",
+                      "&:hover": {
+                        bgcolor: "primary.dark",
+                      },
+                    },
+                  },
+                }}
+              />
+            </Box>
+          )}
 
-      <Alert
-        message={snackbarMessage}
-        openSnackbar={openSnackbar}
-        setOpenSnackbar={setOpenSnackbar}
-      />
-    </Container>
+          {createPostDialogOpen && (
+            <CreatePostDialog
+              dialogType="create"
+              open={createPostDialogOpen}
+              post={newPost}
+              onClose={closeCreatePostDialog}
+              onChange={handleCreatePostChange}
+              onSubmit={handleCreatePostSubmit}
+            />
+          )}
+        </Box>
+      </Container>
+    </Box>
   );
 };
 
