@@ -103,7 +103,7 @@ const exec = util.promisify(require('node:child_process').exec);
 
 const MEMORY = "512m"
 const TIMEOUT = "2"
-const TRASH = "/dev/null"
+const TRASH = "NUL"
 
 // TODO: fails if lots of prints
 export default async function handler(req, res) {
@@ -160,8 +160,7 @@ export default async function handler(req, res) {
 
         }   catch (error) {
             deleteTempFiles(path, extensionLookup[language], res)
-            console.log(error)
-            res.status(401).json({message: "Error Executing Code"})
+            res.status(401).json({error: error.stdout})
         }
     }
   }
