@@ -300,7 +300,7 @@ export default async function handler(req, res) {
 
         const template = await prisma.CodeTemplate.create({
           data: {
-            title: refTemplate.title,
+            title: "Fork of " + refTemplate.title,
             explanation: refTemplate.explanation,
             codeContent: refTemplate.codeContent,
             language: refTemplate.language,
