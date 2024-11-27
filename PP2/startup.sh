@@ -73,19 +73,19 @@ npm install
 
 # Reset Prisma migrations if necessary
 echo "Resetting Prisma migrations..."
-npx prisma migrate reset --force
+npx prisma migrate reset --force --schema=../prisma/schema.prisma
 
 # Run migrations
 echo "Running Prisma migrations..."
-npx prisma migrate dev --name init
+npx prisma migrate dev --name init --schema=../prisma/schema.prisma
 
 # Generate Prisma Client
 echo "Generating Prisma client..."
-npx prisma generate
+npx prisma generate --schema=../prisma/schema.prisma
 
 # Run seed script
 echo "Running seed script..."
-npx tsx prisma/seed.ts
+npx tsx ../prisma/seed.ts
 
 sudo systemctl stop docker
 
