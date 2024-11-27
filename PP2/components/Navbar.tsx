@@ -32,6 +32,7 @@ const NavbarContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const navLinks = [
+    { text: "Coding", href: "/coding" },
     { text: "Blog Posts", href: "/posts" },
     { text: "Code Templates", href: "/code-templates" },
     ...(auth.user?.isAdmin
