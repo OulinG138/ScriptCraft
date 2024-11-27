@@ -209,6 +209,7 @@ const PostDetailPage = () => {
         ...prev,
         [commentId]: {comments: response.data.replies, repliesPage: response.data.page, totalReplies: response.data.totalReplies},
       }));
+      console.log(response.data)
     } catch (error) {
       console.error("Error fetching comments", error);
     }
@@ -231,6 +232,7 @@ const PostDetailPage = () => {
   };
 
   const renderComment = (type: "comment" | "reply", comment: Comment) => {
+    console.log(showReplies)
     return (
     <ListItem
     key={comment.id}
@@ -299,7 +301,7 @@ const PostDetailPage = () => {
       <Button
         color="primary"
         onClick={async () => {
-          await handleReplySubmit(type, comment.id);
+          await handleReplySubmit(type, comment);
         }}
       >
         Submit
@@ -333,7 +335,8 @@ const PostDetailPage = () => {
   </ListItem>)
   }
 
-  const handleReplySubmit = async (type: 'comment' | 'reply', parentCommentId: number) => {
+  const handleReplySubmit = async (type: 'comment' | 'reply', target: Comment) => {
+    const targetId = target.id;
     if (!newReply.content || !post) return;
     if (!auth?.accessToken) {
       console.error("Access token is missing.");
@@ -346,8 +349,25 @@ const PostDetailPage = () => {
         content: "",
         parentCommentId: 0
       }));
-      fetchComments(page);
-      fetchReplies(parentCommentId);
+      await fetchComments(page);
+      await fetchReplies(targetId);
+
+      if (type === "reply") {
+        const parentCommentId = (target as Comment).parentCommentId
+        if (parentCommentId && parentCommentId !== 0 ) {
+          setShowReplies((prev) => ({
+            ...prev,
+            [parentCommentId]: {
+              ...prev[parentCommentId],
+              comments: prev[parentCommentId].comments.map((comment) =>
+                comment.id === targetId
+                  ? { ...comment, repliesCount: comment.repliesCount + 1 }
+                  : comment
+              ),
+            },
+          }));
+        }
+      }
     } catch (error) {
       console.error("Error submitting reply", error);
     }
@@ -481,14 +501,12 @@ const PostDetailPage = () => {
       setShowReplies((prev) => ({
         ...prev,
         [commentId]: {
-          ...prev[commentId], // Preserve existing data for this comment
-          comments: [...(prev[commentId]?.comments || []), ...response.data.replies], // Append new replies
-          repliesPage: response.data.page, // Update the current page
-          totalReplies: response.data.totalPages, // Update the total pages of replies
+          ...prev[commentId],
+          comments: [...(prev[commentId]?.comments || []), ...response.data.replies],
+          repliesPage: response.data.page,
+          totalReplies: response.data.totalPages,
         },
       }));
-      // setRepliesPage(repliesPage + 1)  
-      // setTotalRepliesPages(response.data.totalRepliesPages);
     } catch (error) {
       console.error("Error fetching comments", error);
     }
