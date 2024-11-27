@@ -129,8 +129,7 @@ export default async function handler(req, res) {
             var { stdout} = await exec("docker container create --memory " + MEMORY + " -i -t " + language);
             const container = stdout.replace("\n", "")
 
-            // TODO: REPLACE NUL with /dev/null
-            var {stdout} = await exec("docker cp " + path + extensionLookup[language] + " " + container + ":script" + extensionLookup[language] + " > NUL && " + 
+            var {stdout} = await exec("docker cp " + path + extensionLookup[language] + " " + container + ":script" + extensionLookup[language] + " > " + TRASH + " && " + 
                 "docker cp " + path + ".txt " + container + ":input.txt > " + TRASH + " && " + 
                 "docker start " + container + " > " + TRASH + " && " + 
                 "docker container stop -t " + TIMEOUT + " " + container + " > " + TRASH + " && " + 
@@ -160,8 +159,7 @@ export default async function handler(req, res) {
 
         }   catch (error) {
             deleteTempFiles(path, extensionLookup[language], res)
-            console.log(error)
-            res.status(401).json({message: "Error Executing Code"})
+            res.status(401).json({error: error.stdout})
         }
     }
   }
