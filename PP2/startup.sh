@@ -103,5 +103,6 @@ npx tsx ./prisma/seed.ts
 
 sudo systemctl stop docker
 
+
 # Final check
 echo "Project setup complete. You can now start the server using run.sh"
