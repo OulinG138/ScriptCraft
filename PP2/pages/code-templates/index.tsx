@@ -1,4 +1,5 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
+import toast from "react-hot-toast";
 import {
   Box,
   Button,
@@ -10,12 +11,10 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import { useRouter } from "next/router";
-import TemplateList from "../../components/templates/TemplateList";
-import TemplatesSearchBar from "../../components/templates/TemplatesSearchBar";
+import TemplateList from "@/components/templates/TemplateList";
+import TemplatesSearchBar from "@/components/templates/TemplatesSearchBar";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
-
-import Alert from "../../components/Alert";
 
 interface Post {
   id: number;
@@ -53,10 +52,6 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   const [sortBy, setSortBy] = useState("ratings");
   const [postsPerPage, setPostsPerPage] = useState(5);
 
-  // snackbar alert states
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-
   // post handlers
   const fetchPosts = async () => {
     try {
@@ -64,8 +59,7 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
       let response;
       if (user) {
         if (!auth.accessToken) {
-          setSnackbarMessage("Error: Please log out and try again");
-          setOpenSnackbar(false);
+          toast.error("Error: Please log out and try again");
           return;
         }
         response = await API.code.getUserTemplates(
@@ -192,79 +186,106 @@ const TemplatesPage = ({ user = false }: { user?: boolean }) => {
   }
 
   return (
-    <Container sx={{ mb: 5, mt: 5 }}>
-      <Box sx={{ display: "flex", flexDirection: "row" }}>
-        <Typography
-          variant="h4"
-          className="pb-5"
-          sx={{ whiteSpace: "nowrap", width: "auto" }}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "background.default",
+        py: 4,
+      }}
+    >
+      <Container>
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 2,
+            bgcolor: "background.paper",
+            boxShadow: 1,
+          }}
         >
-          {user ? "My Code Templates" : "Code Templates"}{" "}
-        </Typography>
-
-        {auth && (
-          <Box
-            sx={{
-              height: "100%",
-              display: "flex",
-              width: { xs: "100%", sm: "100%", md: "auto" },
-              flexGrow: { md: 1, xs: 0, sm: 0 },
-              justifyContent: "flex-end",
-            }}
-          >
-            <Button
-              variant="contained"
-              onClick={() => router.push("/coding")}
-              sx={{ whiteSpace: "nowrap", width: "auto" }}
+          <Box sx={{ display: "flex", flexDirection: "row", mb: 3 }}>
+            <Typography
+              variant="h4"
+              sx={{
+                whiteSpace: "nowrap",
+                width: "auto",
+                color: "rgba(0, 0, 0, 1)",
+              }}
             >
-              <EditIcon sx={{ pr: 1 }}> </EditIcon>
-              Create Template
-            </Button>
+              {user ? "My Code Templates" : "Code Templates"}{" "}
+            </Typography>
+
+            {auth && (
+              <Box
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  width: { xs: "100%", sm: "100%", md: "auto" },
+                  flexGrow: { md: 1, xs: 0, sm: 0 },
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Button
+                  variant="contained"
+                  onClick={() => router.push("/coding")}
+                  sx={{ whiteSpace: "nowrap", width: "auto" }}
+                >
+                  <EditIcon sx={{ pr: 1 }}> </EditIcon>
+                  Create Template
+                </Button>
+              </Box>
+            )}
           </Box>
-        )}
-      </Box>
 
-      <TemplatesSearchBar
-        auth={auth}
-        search={search}
-        setSearch={setSearch}
-        onKeyDown={handleSearchKeyDown}
-        onTagsChange={setSearchTags}
-        searchTags={searchTags}
-        onClick={handleSearchClick}
-        onTagsKeyDown={handleTagsKeyDown}
-        sortBy={sortBy}
-        onSortChange={handleSortChange}
-        tags={tags}
-        onTagDelete={handleTagDelete}
-        postsPerPage={postsPerPage}
-        onPostsPerPageChange={onPostsPerPageChange}
-      />
+          <TemplatesSearchBar
+            auth={auth}
+            search={search}
+            setSearch={setSearch}
+            onKeyDown={handleSearchKeyDown}
+            onTagsChange={setSearchTags}
+            searchTags={searchTags}
+            onClick={handleSearchClick}
+            onTagsKeyDown={handleTagsKeyDown}
+            sortBy={sortBy}
+            onSortChange={handleSortChange}
+            tags={tags}
+            onTagDelete={handleTagDelete}
+            postsPerPage={postsPerPage}
+            onPostsPerPageChange={onPostsPerPageChange}
+          />
 
-      <Box className="mt-5">
-        <TemplateList
-          isLoading={isLoading}
-          posts={posts}
-          onPostClick={handlePostClick}
-        />
-      </Box>
+          <Box sx={{ mt: 3 }}>
+            <TemplateList
+              isLoading={isLoading}
+              posts={posts}
+              onPostClick={handlePostClick}
+            />
+          </Box>
 
-      {posts.length > 0 && (
-        <Pagination
-          sx={{ display: "flex", justifyContent: "center", marginTop: 3 }}
-          count={Math.ceil(totalPosts / postsPerPage)}
-          page={page}
-          onChange={handlePageChange}
-          color="primary"
-        />
-      )}
-
-      <Alert
-        message={snackbarMessage}
-        openSnackbar={openSnackbar}
-        setOpenSnackbar={setOpenSnackbar}
-      />
-    </Container>
+          {posts.length > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+              <Pagination
+                sx={{
+                  "& .MuiPaginationItem-root": {
+                    color: "text.primary",
+                    "&.Mui-selected": {
+                      bgcolor: "primary.main",
+                      color: "primary.contrastText",
+                      "&:hover": {
+                        bgcolor: "primary.dark",
+                      },
+                    },
+                  },
+                }}
+                count={Math.ceil(totalPosts / postsPerPage)}
+                page={page}
+                onChange={handlePageChange}
+                color="primary"
+              />
+            </Box>
+          )}
+        </Box>
+      </Container>
+    </Box>
   );
 };
 

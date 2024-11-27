@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import toast from "react-hot-toast";
 import {
   MenuItem,
   Select,
@@ -21,11 +22,10 @@ import {
 import Link from "next/link";
 import useAuth from "@/hooks/useAuth";
 import API from "@/routes/API";
-import RatingsButtons from "../../components/posts/RatingsButtons";
-import CreatePostDialog from "../../components/posts/CreatePostDialog";
-import Alert from "../../components/Alert";
-import ReportDialog from "../../components/posts/ReportDialog";
-import DeleteDialog from "../../components/posts/DeleteDialog";
+import RatingsButtons from "@/components/posts/RatingsButtons";
+import CreatePostDialog from "@/components/posts/CreatePostDialog";
+import ReportDialog from "@/components/posts/ReportDialog";
+import DeleteDialog from "@/components/posts/DeleteDialog";
 import FlagIcon from "@mui/icons-material/Flag";
 
 interface Rating {
@@ -114,8 +114,6 @@ const PostDetailPage = () => {
     codeTemplateLinks: [] as string[],
     codeTemplateIds: [] as number[],
   });
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [openSnackbar, setOpenSnackbar] = useState(false);
 
   const openEditPostDialog = () => {
     setCreatePostDialogOpen(true);
@@ -128,15 +126,13 @@ const PostDetailPage = () => {
 
   const handleEditPostSubmit = async () => {
     if (!editPost.title || !editPost.description || !editPost.content) {
-      setSnackbarMessage("Title, description, and content are required.");
-      setOpenSnackbar(true);
+      toast.error("Title, description, and content are required.");
       return;
     }
 
     if (!auth.accessToken) {
       console.error("Access token is missing");
-      setSnackbarMessage("Error: Login again and retry");
-      setOpenSnackbar(true);
+      toast.error("Error: Login again and retry");
       return;
     }
 
@@ -144,12 +140,10 @@ const PostDetailPage = () => {
       await API.blogpost.updateBlogPost(auth.accessToken, id, editPost);
       closeEditPostDialog();
       fetchPost();
-      setSnackbarMessage("Post edited successfully!");
-      setOpenSnackbar(true);
+      toast.success("Post edited successfully!");
     } catch (error) {
       console.error("Error editing post", error);
-      setSnackbarMessage("Error: Login again and retry");
-      setOpenSnackbar(true);
+      toast.error("Error: Login again and retry");
     }
   };
 
@@ -221,8 +215,7 @@ const PostDetailPage = () => {
 
   const handleCommentSubmit = async () => {
     if (!auth.user) {
-      setSnackbarMessage("Must login to comment");
-      setOpenSnackbar(true);
+      toast.error("Must login to comment");
     }
     if (!newComment.content.trim() || !post) return;
     try {
@@ -273,8 +266,7 @@ const PostDetailPage = () => {
         parentCommentId: commentId,
       }));
     } else {
-      setSnackbarMessage("Must login to reply to a comment");
-      setOpenSnackbar(true);
+      toast.error("Must login to reply to a comment");
     }
   };
 
@@ -317,8 +309,7 @@ const PostDetailPage = () => {
 
   const handleReport = (targetType: "post" | "comment", targetId: number) => {
     if (!auth.user) {
-      setSnackbarMessage("Must login to report");
-      setOpenSnackbar(true);
+      toast.error("Must login to report");
       return;
     }
     setReportTarget({ type: targetType, id: targetId });
@@ -346,8 +337,7 @@ const PostDetailPage = () => {
     value: number
   ) => {
     if (!auth.user) {
-      setSnackbarMessage("Must login to vote");
-      setOpenSnackbar(true);
+      toast.error("Must login to vote");
       return;
     }
     try {
@@ -454,8 +444,9 @@ const PostDetailPage = () => {
           flexDirection: "row",
           justifyContent: "center",
           margin: "0 auto",
-          mt: 8,
           p: 2,
+          bgcolor: "background.default",
+          minHeight: "100vh",
         }}
       >
         <Box sx={{ mt: 1, ml: 2 }}>
@@ -471,28 +462,47 @@ const PostDetailPage = () => {
           <Box
             sx={{
               padding: 5,
-              border: "1px solid #ddd",
+              border: "1px solid",
+              borderColor: "divider",
               borderRadius: 2,
               display: "flex",
               alignItems: "flex-start",
               marginBottom: "16px",
+              bgcolor: "background.paper",
             }}
           >
             <div style={{ flex: 1 }}>
-              <Box className="flex justify-between items-center">
-                <Typography variant="h4" sx={{ mb: 2, fontSize: "2rem" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{ mb: 2, fontSize: "2rem", color: "rgba(0, 0, 0, 0.87)" }}
+                >
                   {post.title}
                 </Typography>
-
                 {post.isHidden && (
-                  <Box className="text-red-500 flex items-center">
-                    <FlagIcon className="text-3xl pr-2" />
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      color: "error.main",
+                    }}
+                  >
+                    <FlagIcon sx={{ fontSize: "2rem", mr: 1 }} />
                     <Typography variant="h6">HIDDEN</Typography>
                   </Box>
                 )}
               </Box>
 
-              <Typography variant="body1" color="textSecondary">
+              <Typography
+                variant="body1"
+                sx={{ color: "rgba(0, 0, 0, 0.87)", mb: 1 }}
+              >
                 By{" "}
                 {`${post.author.firstName} ${post.author.lastName} ${post.authorId.slice(-5)}`}{" "}
                 | Posted: {new Date(post.createdAt).toLocaleDateString()} | Last
@@ -508,21 +518,30 @@ const PostDetailPage = () => {
                 onVote={handleVote}
                 openEditPostDialog={openEditPostDialog}
                 onDelete={handleDelete}
-              ></RatingsButtons>
+              />
 
               <Typography
                 variant="body1"
-                sx={{ mb: 3, whiteSpace: "pre-wrap", wordWrap: "break-word" }}
+                sx={{
+                  mb: 3,
+                  whiteSpace: "pre-wrap",
+                  wordWrap: "break-word",
+                  color: "rgba(0, 0, 0, 0.87)",
+                }}
               >
                 {post.content}
               </Typography>
 
-              {/* Tags */}
               {post.tags.length > 0 && (
                 <Box sx={{ mt: 3 }}>
                   <Typography
                     variant="body1"
-                    sx={{ display: "inline", mr: 1, fontWeight: "500" }}
+                    sx={{
+                      display: "inline",
+                      mr: 1,
+                      fontWeight: "500",
+                      color: "rgba(0, 0, 0, 0.87)",
+                    }}
                   >
                     Tags:
                   </Typography>
@@ -536,49 +555,45 @@ const PostDetailPage = () => {
                 </Box>
               )}
 
-              {/* Code Templates */}
               {post.codeTemplates.length > 0 && (
                 <Box sx={{ mt: 2 }}>
-                  {post.codeTemplates.length > 0 && (
-                    <>
-                      <Typography
-                        variant="body1"
-                        sx={{ mb: 1, fontWeight: "500" }}
-                      >
-                        Code Templates:
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 1,
-                        }}
-                      >
-                        {editPost.codeTemplateLinks.map((link) => (
-                          <Link href={link} passHref>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                color: "primary.main",
-                                textDecoration: "underline",
-                              }}
-                            >
-                              {link}
-                            </Typography>
-                          </Link>
-                        ))}
-                      </Box>
-                    </>
-                  )}
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      mb: 1,
+                      fontWeight: "500",
+                      color: "rgba(0, 0, 0, 0.87)",
+                    }}
+                  >
+                    Code Templates:
+                  </Typography>
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
+                  >
+                    {editPost.codeTemplateLinks.map((link) => (
+                      <Link href={link} passHref>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "primary.main",
+                            textDecoration: "underline",
+                          }}
+                        >
+                          {link}
+                        </Typography>
+                      </Link>
+                    ))}
+                  </Box>
                 </Box>
               )}
 
-              {/* Comments */}
               <Box sx={{ mt: 3 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ mb: 2, color: "rgba(0, 0, 0, 0.87)" }}
+                >
                   Comments:
                 </Typography>
-
                 <FormControl sx={{ marginRight: 2 }}>
                   <InputLabel>Sort By</InputLabel>
                   <Select
@@ -631,36 +646,59 @@ const PostDetailPage = () => {
                 </Box>
 
                 {comments.length > 0 ? (
-                  <List className="w-full flex flex-col">
+                  <List
+                    sx={{
+                      width: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
                     {comments.map((comment) => (
                       <ListItem
                         key={comment.id}
                         sx={{
-                          borderTop:
+                          borderTop: (theme) =>
                             comment.id === comments[0].id
                               ? "none"
-                              : "1px solid #e0e0e0",
+                              : `1px solid ${theme.palette.divider}`,
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "flex-start",
                         }}
                       >
-                        {/* Content */}
-                        <Box className="w-full flex justify-between items-center">
+                        <Box
+                          sx={{
+                            width: "100%",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
                           <ListItemText
-                            key={comment.id}
-                            primary={comment.content}
+                            primary={
+                              <Typography sx={{ color: "rgba(0, 0, 0, 0.87)" }}>
+                                {comment.content}
+                              </Typography>
+                            }
                           />
                           {comment.isHidden && (
-                            <Box className="text-red-500 flex items-center">
-                              <FlagIcon className="text-2xl pr-2" />
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                color: "error.main",
+                              }}
+                            >
+                              <FlagIcon sx={{ fontSize: "1.5rem", mr: 1 }} />
                               <Typography variant="body1">HIDDEN</Typography>
                             </Box>
                           )}
                         </Box>
 
-                        {/* Metadata */}
-                        <Typography variant="body2" color="textSecondary">
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "rgba(0, 0, 0, 0.87)" }}
+                        >
                           By{" "}
                           {`${comment.author.firstName} ${comment.author.lastName} ${comment.authorId.slice(-5)}`}{" "}
                           | Posted:{" "}
@@ -669,7 +707,6 @@ const PostDetailPage = () => {
                           {new Date(comment.updatedAt).toLocaleDateString()}
                         </Typography>
 
-                        {/* Buttons */}
                         <Box
                           sx={{
                             display: "flex",
@@ -680,7 +717,6 @@ const PostDetailPage = () => {
                           <Button
                             color="primary"
                             size="small"
-                            className={`w-8'}`}
                             sx={{ minWidth: "auto" }}
                             onClick={() => handleReply(comment.id)}
                           >
@@ -689,25 +725,21 @@ const PostDetailPage = () => {
 
                           {comment.repliesCount > 0 &&
                             (showReplies.parentCommentId !== comment.id ? (
-                              <>
-                                <Button
-                                  color="primary"
-                                  size="small"
-                                  onClick={() => fetchReplies(comment.id)}
-                                >
-                                  Show Replies
-                                </Button>
-                              </>
+                              <Button
+                                color="primary"
+                                size="small"
+                                onClick={() => fetchReplies(comment.id)}
+                              >
+                                Show Replies
+                              </Button>
                             ) : (
-                              <>
-                                <Button
-                                  color="primary"
-                                  size="small"
-                                  onClick={handleHideReplies}
-                                >
-                                  Hide Replies
-                                </Button>
-                              </>
+                              <Button
+                                color="primary"
+                                size="small"
+                                onClick={handleHideReplies}
+                              >
+                                Hide Replies
+                              </Button>
                             ))}
                           <RatingsButtons
                             isVoting={isVoting}
@@ -718,12 +750,11 @@ const PostDetailPage = () => {
                             onVote={handleVote}
                             openEditPostDialog={openEditPostDialog}
                             onDelete={handleDelete}
-                          ></RatingsButtons>
+                          />
                         </Box>
 
-                        {/* Reply Box */}
                         {newReply.parentCommentId === comment.id && (
-                          <Container style={{ marginTop: "5px" }}>
+                          <Container>
                             <TextField
                               label="Write your reply"
                               rows={4}
@@ -738,9 +769,7 @@ const PostDetailPage = () => {
                             />
                             <Button
                               color="primary"
-                              onClick={async () => {
-                                await handleReplySubmit(comment.id);
-                              }}
+                              onClick={() => handleReplySubmit(comment.id)}
                             >
                               Submit
                             </Button>
@@ -750,89 +779,111 @@ const PostDetailPage = () => {
                           </Container>
                         )}
 
-                        {/* Replies */}
-                        {showReplies.parentCommentId === comment.id &&
-                          (showReplies.replies.length > 0 ? (
-                            <Container style={{ marginTop: "5px" }}>
-                              {showReplies.replies.map((reply) => (
-                                <ListItem
-                                  key={reply.id}
-                                  className="flex -space-y-2 flex-col items-start w-full"
-                                  sx={{ borderTop: "1px solid #e0e0e0" }}
-                                >
-                                  <Box className="box w-full">
-                                    <Box className="w-full flex justify-between items-center">
-                                      <ListItemText
-                                        key={reply.id}
-                                        primary={reply.content}
-                                      />
-                                      {reply.isHidden && (
-                                        <Box className="text-red-500 flex items-center">
-                                          <FlagIcon className="text-2xl pr-2" />
-                                          <Typography variant="body1">
-                                            HIDDEN
-                                          </Typography>
-                                        </Box>
-                                      )}
-                                    </Box>
-                                    <Typography
-                                      variant="body2"
-                                      color="textSecondary"
-                                    >
-                                      By{" "}
-                                      {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`}{" "}
-                                      | Posted:{" "}
-                                      {new Date(
-                                        reply.createdAt
-                                      ).toLocaleDateString()}{" "}
-                                      | Last Updated:{" "}
-                                      {new Date(
-                                        reply.updatedAt
-                                      ).toLocaleDateString()}
-                                    </Typography>
-                                    <RatingsButtons
-                                      isVoting={isVoting}
-                                      userId={auth.user?.id || null}
-                                      targetType="comment"
-                                      element={reply}
-                                      onReport={handleReport}
-                                      onVote={handleVote}
-                                      openEditPostDialog={openEditPostDialog}
-                                      onDelete={handleDelete}
+                        {showReplies.parentCommentId === comment.id && (
+                          <Container>
+                            {showReplies.replies.map((reply) => (
+                              <ListItem
+                                key={reply.id}
+                                sx={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "flex-start",
+                                  width: "100%",
+                                  borderTop: (theme) =>
+                                    `1px solid ${theme.palette.divider}`,
+                                }}
+                              >
+                                <Box sx={{ width: "100%" }}>
+                                  <Box
+                                    sx={{
+                                      width: "100%",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <ListItemText
+                                      primary={
+                                        <Typography
+                                          sx={{ color: "rgba(0, 0, 0, 0.87)" }}
+                                        >
+                                          {reply.content}
+                                        </Typography>
+                                      }
                                     />
+                                    {reply.isHidden && (
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          color: "error.main",
+                                        }}
+                                      >
+                                        <FlagIcon
+                                          sx={{ fontSize: "1.5rem", mr: 1 }}
+                                        />
+                                        <Typography variant="body1">
+                                          HIDDEN
+                                        </Typography>
+                                      </Box>
+                                    )}
                                   </Box>
-                                </ListItem>
-                              ))}
-                              {repliesPage < totalRepliesPages && (
-                                <Button
-                                  color="primary"
-                                  size="small"
-                                  onClick={() => handleMoreReplies()}
-                                >
-                                  More Replies
-                                </Button>
-                              )}
-                            </Container>
-                          ) : (
-                            <Typography
-                              variant="body2"
-                              color="textSecondary"
-                              style={{ marginTop: "5px" }}
-                            >
-                              No replies
-                            </Typography>
-                          ))}
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ color: "rgba(0, 0, 0, 0.87)" }}
+                                  >
+                                    By{" "}
+                                    {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`}{" "}
+                                    | Posted:{" "}
+                                    {new Date(
+                                      reply.createdAt
+                                    ).toLocaleDateString()}{" "}
+                                    | Last Updated:{" "}
+                                    {new Date(
+                                      reply.updatedAt
+                                    ).toLocaleDateString()}
+                                  </Typography>
+                                  <RatingsButtons
+                                    isVoting={isVoting}
+                                    userId={auth.user?.id || null}
+                                    targetType="comment"
+                                    element={reply}
+                                    onReport={handleReport}
+                                    onVote={handleVote}
+                                    openEditPostDialog={openEditPostDialog}
+                                    onDelete={handleDelete}
+                                  />
+                                </Box>
+                              </ListItem>
+                            ))}
+                            {repliesPage < totalRepliesPages && (
+                              <Button
+                                color="primary"
+                                size="small"
+                                onClick={handleMoreReplies}
+                              >
+                                More Replies
+                              </Button>
+                            )}
+                          </Container>
+                        )}
                       </ListItem>
                     ))}
                   </List>
                 ) : (
-                  <Typography variant="body1" textAlign="center" mt={3}>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      textAlign: "center",
+                      mt: 3,
+                      color: "rgba(0, 0, 0, 0.87)",
+                    }}
+                  >
                     No comments to display
                   </Typography>
                 )}
               </Box>
 
-              {/* Comment Pagination */}
               {comments.length > 0 && (
                 <Box sx={{ mt: 3, display: "flex", justifyContent: "center" }}>
                   <Pagination
@@ -857,7 +908,6 @@ const PostDetailPage = () => {
             reportExplanation={reportExplanation}
           />
 
-          {/* Edit Post Dialog */}
           {openDeleteDialog && (
             <DeleteDialog
               auth={auth}
@@ -868,7 +918,6 @@ const PostDetailPage = () => {
             />
           )}
 
-          {/* Edit Post Dialog */}
           {createPostDialogOpen && (
             <CreatePostDialog
               dialogType="edit"
@@ -880,13 +929,6 @@ const PostDetailPage = () => {
               onSubmit={handleEditPostSubmit}
             />
           )}
-
-          {/* Snackbar Alert */}
-          <Alert
-            message={snackbarMessage}
-            openSnackbar={openSnackbar}
-            setOpenSnackbar={setOpenSnackbar}
-          />
         </Container>
       </Box>
     );

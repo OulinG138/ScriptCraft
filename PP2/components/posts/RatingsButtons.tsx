@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, Button } from "@mui/material";
-import { Post, Comment } from "../interfaces";
+import { Post, Comment } from "../../types/interfaces";
 
 interface RatingsButtonsProps {
   isVoting: boolean;
@@ -38,7 +38,6 @@ const RatingsButtons = ({
         Edit
       </Button>
     )}
-
     <Button
       variant="text"
       size={targetType === "comment" ? "small" : "medium"}
@@ -47,7 +46,6 @@ const RatingsButtons = ({
     >
       Report
     </Button>
-
     {targetType === "post" && element.authorId === userId && (
       <Button
         variant="text"
@@ -58,7 +56,6 @@ const RatingsButtons = ({
         Delete
       </Button>
     )}
-
     <Button
       className={`w-${targetType === "post" ? "9" : "6"}`}
       sx={{
@@ -70,14 +67,12 @@ const RatingsButtons = ({
     >
       ▼
     </Button>
-
-    <Typography>
+    <Typography sx={{ color: "rgba(0, 0, 0, 0.87)" }}>
       {" "}
       {element.ratingCount > 0
         ? `+${element.ratingCount}`
         : `${element.ratingCount}`}
     </Typography>
-
     <Button
       className={`w-${targetType === "post" ? "9" : "6"}`}
       sx={{

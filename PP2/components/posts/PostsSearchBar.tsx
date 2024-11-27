@@ -11,7 +11,7 @@ import {
   SelectChangeEvent,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import { Auth } from "../interfaces";
+import { Auth } from "../../types/interfaces";
 
 interface SearchBarProps {
   auth: Auth;
