@@ -3,7 +3,7 @@
 # Start the Next.js application
 
 echo "Starting Docker Daemon..."
-sudo dockerd &
+sudo systemctl start docker
 
 echo "Starting the Next.js application..."
 npm run dev

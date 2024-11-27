@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { verifyLoggedIn } from "@/utils/auth";
+import { verifyToken } from "@/utils/auth";
 
 /**
  * @swagger
@@ -271,7 +271,20 @@ export default async function handler(req, res) {
       });
 
       if (result) {
-        res.status(200).json({ message: "Get successful", result: result });
+
+        var author = await prisma.user.findFirst({
+          where:  {
+            id: result.authorId
+          },
+          select: {
+            firstName: true,
+            lastName: true,
+          }
+        })
+
+        const mergedResult = {...result, ...author}
+
+        res.status(200).json({ message: "Get successful", result: mergedResult});
       } else {
         res.status(401).json({ message: "Template not found" });
       }
@@ -281,9 +294,8 @@ export default async function handler(req, res) {
     }
   } else if (req.method === "POST") {
     const { id } = req.query;
-
-    verifyLoggedIn(req);
     const parentTemplateID = Number(id);
+
     try {
       const refTemplate = await prisma.CodeTemplate.findFirst({
         where: {
@@ -296,14 +308,12 @@ export default async function handler(req, res) {
 
       if (refTemplate === null) {
         res.status(402).json({ message: "Template to fork not found" });
-      } else if (!req.user) {
-        res
-          .status(201)
-          .json({ message: "Fork Successful", template: refTemplate });
-      } else {
+      } else if (req.headers.authorization) {
+        verifyToken(req, res, () => {});
+
         const template = await prisma.CodeTemplate.create({
           data: {
-            title: refTemplate.title,
+            title: "Fork of " + refTemplate.title,
             explanation: refTemplate.explanation,
             codeContent: refTemplate.codeContent,
             language: refTemplate.language,
@@ -325,6 +335,10 @@ export default async function handler(req, res) {
         res
           .status(200)
           .json({ messsage: "Fork Successful", template: template });
+      } else  {
+        res
+        .status(201)
+        .json({ message: "Fork Successful", template: refTemplate });
       }
     } catch (error) {
       console.log(error);
@@ -335,7 +349,7 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     const templateID = Number(id);
-    verifyLoggedIn(req);
+    verifyToken(req, res, () => {});
 
     if (!req.user) {
       res.status(401).json({ message: "Account Required" });
@@ -385,9 +399,22 @@ export default async function handler(req, res) {
               tags: true,
             },
           });
+
+          var author = await prisma.user.findFirst({
+            where:  {
+              id: result.authorId
+            },
+            select: {
+              firstName: true,
+              lastName: true,
+            }
+          })
+  
+          const mergedResult = {...result, ...author}
+
           res
             .status(200)
-            .json({ message: "Template edit successful", result: result });
+            .json({ message: "Template edit successful", result: mergedResult });
         } else {
           res.status(402).json({ message: "Only owner may edit template" });
         }
@@ -399,7 +426,7 @@ export default async function handler(req, res) {
   } else if (req.method === "DELETE") {
     const { id } = req.query;
     const templateID = Number(id);
-    verifyLoggedIn(req);
+    verifyToken(req, res, () => {});
     if (req.user) {
       try {
         const template = await prisma.CodeTemplate.findFirst({
@@ -430,7 +457,7 @@ export default async function handler(req, res) {
   } else if (req.method === "POST") {
     const { id } = req.query;
 
-    verifyLoggedIn(req);
+    verifyToken(req, res, () => {});
     const parentTemplateID = Number(id);
     try {
       const refTemplate = await prisma.CodeTemplate.findFirst({
@@ -483,7 +510,7 @@ export default async function handler(req, res) {
     const { id } = req.query;
 
     const templateID = Number(id);
-    verifyLoggedIn(req);
+    verifyToken(req, res, () => {});
 
     if (!req.user) {
       res.status(401).json({ message: "Account Required" });
@@ -547,7 +574,7 @@ export default async function handler(req, res) {
   } else if (req.method === "DELETE") {
     const { id } = req.query;
     const templateID = Number(id);
-    verifyLoggedIn(req);
+    verifyToken(req, res, () => {});
     if (req.user) {
       try {
         const template = await prisma.CodeTemplate.findFirst({
