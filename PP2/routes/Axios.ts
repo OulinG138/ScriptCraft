@@ -22,6 +22,12 @@ const authAxiosInstance = axios.create({
   withCredentials: true,
 });
 
+const refreshAxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
+});
+
 authAxiosInstance.interceptors.response.use(
   (response) => {
     return response;
@@ -53,4 +59,4 @@ authAxiosInstance.interceptors.response.use(
 );
 
 export default openAxiosInstance;
-export { authAxiosInstance, getJWTHeader };
+export { authAxiosInstance, refreshAxiosInstance, getJWTHeader };
