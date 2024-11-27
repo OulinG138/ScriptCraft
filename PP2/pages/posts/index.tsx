@@ -98,7 +98,6 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
         );
         setPosts(response.data.posts);
         setTotalPosts(response.data.totalPosts);
-        console.log('fetched posts:', response.data.posts);
       }
     } catch (error) {
       console.error("Error fetching posts", error);
@@ -137,6 +136,7 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
 
   // search handlers
   const handleSearchClick = async () => {
+    console.log(search, tags);
     setPage(1);
     await fetchPosts();
   };
@@ -246,7 +246,6 @@ const BlogPostsPage = ({ user = false }: { user?: boolean }) => {
   // Save state to sessionStorage whenever it changes
   useEffect(() => {
     if (mounted) {
-      console.log("saving..", search);
       sessionStorage.setItem(
         LOCAL_STORAGE_KEY,
         JSON.stringify({ search, tags, sortBy, page, postsPerPage })
