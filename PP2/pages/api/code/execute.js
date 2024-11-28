@@ -125,16 +125,16 @@ export default async function handler(req, res) {
 
         // Executing scipt
         try {
-            var { stdout} = await exec("docker container create --memory " + MEMORY + " -i -t " + language);
+            var { stdout} = await exec("sudo docker container create --memory " + MEMORY + " -i -t " + language);
             const container = stdout.replace("\n", "")
 
-            var {stdout} = await exec("docker cp " + path + extensionLookup[language] + " " + container + ":script" + extensionLookup[language] + " > " + TRASH + "  && " + 
-                "docker cp " + path + ".txt " + container + ":input.txt > " + TRASH + " && " + 
-                "docker start " + container + " > " + TRASH + " && " + 
-                "docker container stop -t " + TIMEOUT + " " + container + " > " + TRASH + " && " + 
-                "docker logs " + container + " && " + 
-                "docker inspect " + container + " --format={{.State.ExitCode}} && " +
-                "docker rm " + container + " > " + TRASH
+            var {stdout} = await exec("sudo docker cp " + path + extensionLookup[language] + " " + container + ":script" + extensionLookup[language] + " > " + TRASH + "  && " + 
+                "sudo docker cp " + path + ".txt " + container + ":input.txt > " + TRASH + " && " + 
+                "sudo docker start " + container + " > " + TRASH + " && " + 
+                "sudo docker container stop -t " + TIMEOUT + " " + container + " > " + TRASH + " && " + 
+                "sudo docker logs " + container + " && " + 
+                "sudo docker inspect " + container + " --format={{.State.ExitCode}} && " +
+                "sudo docker rm " + container + " > " + TRASH
             );
 
             const end = stdout.lastIndexOf("\n")
