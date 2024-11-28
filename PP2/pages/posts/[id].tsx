@@ -69,6 +69,7 @@ interface Comment {
   repliesCount: number;
   userRating?: Rating;
   author: { firstName: string; lastName: string };
+  showReplies?: boolean;
 }
 
 const PostDetailPage = () => {
@@ -98,10 +99,13 @@ const PostDetailPage = () => {
   } | null>(null);
 
   const [showReplies, setShowReplies] = useState<{
-    parentCommentId: number;
-    replies: Comment[];
-  }>({ parentCommentId: 0, replies: [] });
-  const [repliesPage, setRepliesPage] = useState(1);
+    [id: number]: {
+      comments: Comment[];
+      repliesPage: number;
+      totalReplies: number;
+    };
+  }>({});
+  // const [repliesPage, setRepliesPage] = useState(1);
   const repliesPerPage = 5;
   // const [totalRepliesPages, setTotalRepliesPages] = useState(0);
 
@@ -242,21 +246,24 @@ const PostDetailPage = () => {
         1,
         repliesPerPage
       );
-      setShowReplies({
-        parentCommentId: commentId,
-        replies: response.data.replies,
-      });
-      setRepliesPage(1);
-      setTotalRepliesPages(response.data.totalPages);
+      setShowReplies((prev) => ({
+        ...prev,
+        [commentId]: {
+          comments: response.data.replies,
+          repliesPage: response.data.page,
+          totalReplies: response.data.totalReplies,
+        },
+      }));
     } catch (error) {
       console.error("Error fetching comments", error);
     }
   };
 
-  const handleHideReplies = () => {
-    setShowReplies({ parentCommentId: 0, replies: [] });
-    setRepliesPage(1);
-    setTotalRepliesPages(0);
+  const handleHideReplies = (commentId: number) => {
+    setShowReplies((prev) => {
+      const { [commentId]: _, ...rest } = prev;
+      return rest;
+    });
   };
 
   const handleReply = (commentId: number) => {
@@ -271,9 +278,8 @@ const PostDetailPage = () => {
   };
 
   const renderComment = (type: "comment" | "reply", comment: Comment) => {
-    console.log(showReplies);
     return (
-      <Container
+      <ListItem
         key={comment.id}
         sx={{
           borderTop:
@@ -285,7 +291,12 @@ const PostDetailPage = () => {
       >
         {/* Content */}
         <Box className="w-full flex justify-between items-center">
-          <ListItemText key={comment.id} primary={comment.content} />
+          <ListItemText
+            key={comment.id}
+            primary={
+              <Typography sx={{ color: "black" }}>{comment.content}</Typography>
+            }
+          />
           {comment.isHidden && (
             <Box className="text-red-500 flex items-center">
               <FlagIcon className="text-2xl pr-2" />
@@ -371,7 +382,7 @@ const PostDetailPage = () => {
             <Button
               color="primary"
               onClick={async () => {
-                await handleReplySubmit(type, comment);
+                await handleReplySubmit(type, comment.id);
               }}
             >
               Submit
@@ -401,15 +412,14 @@ const PostDetailPage = () => {
               )}
             </Container>
           )}
-      </Container>
+      </ListItem>
     );
   };
 
   const handleReplySubmit = async (
     type: "comment" | "reply",
-    target: Comment
+    parentCommentId: number
   ) => {
-    const targetId = target.id;
     if (!newReply.content || !post) return;
     if (!auth?.accessToken) {
       console.error("Access token is missing.");
@@ -422,25 +432,8 @@ const PostDetailPage = () => {
         content: "",
         parentCommentId: 0,
       }));
-      await fetchComments(page);
-      await fetchReplies(targetId);
-
-      if (type === "reply") {
-        const parentCommentId = (target as Comment).parentCommentId;
-        if (parentCommentId && parentCommentId !== 0) {
-          setShowReplies((prev) => ({
-            ...prev,
-            [parentCommentId]: {
-              ...prev[parentCommentId],
-              comments: prev[parentCommentId].comments.map((comment) =>
-                comment.id === targetId
-                  ? { ...comment, repliesCount: comment.repliesCount + 1 }
-                  : comment
-              ),
-            },
-          }));
-        }
-      }
+      fetchComments(page);
+      fetchReplies(parentCommentId);
     } catch (error) {
       console.error("Error submitting reply", error);
     }
@@ -503,7 +496,7 @@ const PostDetailPage = () => {
       }
       if (!target.userRating) {
         setIsVoting(true);
-        await API.blogpost.postRating(auth.accessToken, {
+        rating = await API.blogpost.postRating(auth.accessToken, {
           targetType,
           targetId: target.id,
           value,
@@ -518,7 +511,7 @@ const PostDetailPage = () => {
       } else if (target.userRating.value !== value) {
         setIsVoting(true);
         await API.blogpost.deleteRating(auth.accessToken, target.userRating.id);
-        await API.blogpost.postRating(auth.accessToken, {
+        rating = await API.blogpost.postRating(auth.accessToken, {
           targetType,
           targetId: target.id,
           value,
@@ -586,21 +579,28 @@ const PostDetailPage = () => {
     setDeleteTargetType(targetType);
   };
 
-  const handleMoreReplies = async () => {
+  const handleMoreReplies = async (commentId: number) => {
     try {
-      const parentCommentId = showReplies.parentCommentId;
       const response = await API.blogpost.getPaginatedReplies(
         auth.accessToken,
-        parentCommentId,
-        repliesPage + 1,
+        commentId,
+        showReplies[commentId].repliesPage + 1,
         repliesPerPage
       );
-      setShowReplies((prevState) => ({
-        ...prevState,
-        replies: prevState.replies.concat(response.data.replies),
+      setShowReplies((prev) => ({
+        ...prev,
+        [commentId]: {
+          ...prev[commentId], // Preserve existing data for this comment
+          comments: [
+            ...(prev[commentId]?.comments || []),
+            ...response.data.replies,
+          ], // Append new replies
+          repliesPage: response.data.page, // Update the current page
+          totalReplies: response.data.totalPages, // Update the total pages of replies
+        },
       }));
-      setRepliesPage(repliesPage + 1);
-      setTotalRepliesPages(response.data.totalRepliesPages);
+      // setRepliesPage(repliesPage + 1)
+      // setTotalRepliesPages(response.data.totalRepliesPages);
     } catch (error) {
       console.error("Error fetching comments", error);
     }
@@ -618,6 +618,7 @@ const PostDetailPage = () => {
           flexDirection: "row",
           justifyContent: "center",
           margin: "0 auto",
+          mt: 0,
           p: 2,
           bgcolor: "background.default",
           minHeight: "100vh",
@@ -636,8 +637,7 @@ const PostDetailPage = () => {
           <Box
             sx={{
               padding: 5,
-              border: "1px solid",
-              borderColor: "divider",
+              border: "1px solid #ddd",
               borderRadius: 2,
               display: "flex",
               alignItems: "flex-start",
@@ -646,37 +646,29 @@ const PostDetailPage = () => {
             }}
           >
             <div style={{ flex: 1 }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
                 <Typography
                   variant="h4"
-                  sx={{ mb: 2, fontSize: "2rem", color: "rgba(0, 0, 0, 0.87)" }}
+                  sx={{ mb: 2, fontSize: "2rem", color: "black" }}
                 >
                   {post.title}
                 </Typography>
+
                 {post.isHidden && (
                   <Box
                     sx={{
+                      color: "error.main",
                       display: "flex",
                       alignItems: "center",
-                      color: "error.main",
                     }}
                   >
-                    <FlagIcon sx={{ fontSize: "2rem", mr: 1 }} />
+                    <FlagIcon sx={{ fontSize: "2rem", pr: 1 }} />
                     <Typography variant="h6">HIDDEN</Typography>
                   </Box>
                 )}
               </Box>
 
-              <Typography
-                variant="body1"
-                sx={{ color: "rgba(0, 0, 0, 0.87)", mb: 1 }}
-              >
+              <Typography variant="body1" color="textSecondary">
                 By{" "}
                 {`${post.author.firstName} ${post.author.lastName} ${post.authorId.slice(-5)}`}{" "}
                 | Posted: {new Date(post.createdAt).toLocaleDateString()} | Last
@@ -700,12 +692,13 @@ const PostDetailPage = () => {
                   mb: 3,
                   whiteSpace: "pre-wrap",
                   wordWrap: "break-word",
-                  color: "rgba(0, 0, 0, 0.87)",
+                  color: "black",
                 }}
               >
                 {post.content}
               </Typography>
 
+              {/* Tags */}
               {post.tags.length > 0 && (
                 <Box sx={{ mt: 3 }}>
                   <Typography
@@ -714,7 +707,7 @@ const PostDetailPage = () => {
                       display: "inline",
                       mr: 1,
                       fontWeight: "500",
-                      color: "rgba(0, 0, 0, 0.87)",
+                      color: "black",
                     }}
                   >
                     Tags:
@@ -729,15 +722,12 @@ const PostDetailPage = () => {
                 </Box>
               )}
 
+              {/* Code Templates */}
               {post.codeTemplates.length > 0 && (
                 <Box sx={{ mt: 2 }}>
                   <Typography
                     variant="body1"
-                    sx={{
-                      mb: 1,
-                      fontWeight: "500",
-                      color: "rgba(0, 0, 0, 0.87)",
-                    }}
+                    sx={{ mb: 1, fontWeight: "500", color: "black" }}
                   >
                     Code Templates:
                   </Typography>
@@ -761,13 +751,12 @@ const PostDetailPage = () => {
                 </Box>
               )}
 
+              {/* Comments */}
               <Box sx={{ mt: 3 }}>
-                <Typography
-                  variant="h6"
-                  sx={{ mb: 2, color: "rgba(0, 0, 0, 0.87)" }}
-                >
+                <Typography variant="h6" sx={{ mb: 2, color: "black" }}>
                   Comments:
                 </Typography>
+
                 <FormControl sx={{ marginRight: 2 }}>
                   <InputLabel>Sort By</InputLabel>
                   <Select
@@ -820,244 +809,19 @@ const PostDetailPage = () => {
                 </Box>
 
                 {comments.length > 0 ? (
-                  <List
-                    sx={{
-                      width: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    {comments.map((comment) => (
-                      <ListItem
-                        key={comment.id}
-                        sx={{
-                          borderTop: (theme) =>
-                            comment.id === comments[0].id
-                              ? "none"
-                              : `1px solid ${theme.palette.divider}`,
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-start",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: "100%",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <ListItemText
-                            primary={
-                              <Typography sx={{ color: "rgba(0, 0, 0, 0.87)" }}>
-                                {comment.content}
-                              </Typography>
-                            }
-                          />
-                          {comment.isHidden && (
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                color: "error.main",
-                              }}
-                            >
-                              <FlagIcon sx={{ fontSize: "1.5rem", mr: 1 }} />
-                              <Typography variant="body1">HIDDEN</Typography>
-                            </Box>
-                          )}
-                        </Box>
-
-                        <Typography
-                          variant="body2"
-                          sx={{ color: "rgba(0, 0, 0, 0.87)" }}
-                        >
-                          By{" "}
-                          {`${comment.author.firstName} ${comment.author.lastName} ${comment.authorId.slice(-5)}`}{" "}
-                          | Posted:{" "}
-                          {new Date(comment.createdAt).toLocaleDateString()} |
-                          Last Updated:{" "}
-                          {new Date(comment.updatedAt).toLocaleDateString()}
-                        </Typography>
-
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Button
-                            color="primary"
-                            size="small"
-                            sx={{ minWidth: "auto" }}
-                            onClick={() => handleReply(comment.id)}
-                          >
-                            Reply
-                          </Button>
-
-                          {comment.repliesCount > 0 &&
-                            (showReplies.parentCommentId !== comment.id ? (
-                              <Button
-                                color="primary"
-                                size="small"
-                                onClick={() => fetchReplies(comment.id)}
-                              >
-                                Show Replies
-                              </Button>
-                            ) : (
-                              <Button
-                                color="primary"
-                                size="small"
-                                onClick={handleHideReplies}
-                              >
-                                Hide Replies
-                              </Button>
-                            ))}
-                          <RatingsButtons
-                            isVoting={isVoting}
-                            userId={auth.user?.id || null}
-                            targetType="comment"
-                            element={comment}
-                            onReport={handleReport}
-                            onVote={handleVote}
-                            openEditPostDialog={openEditPostDialog}
-                            onDelete={handleDelete}
-                          />
-                        </Box>
-
-                        {newReply.parentCommentId === comment.id && (
-                          <Container>
-                            <TextField
-                              label="Write your reply"
-                              rows={4}
-                              value={newReply.content}
-                              onChange={(e) =>
-                                setNewReply((prevState) => ({
-                                  ...prevState,
-                                  content: e.target.value,
-                                }))
-                              }
-                              fullWidth
-                            />
-                            <Button
-                              color="primary"
-                              onClick={() => handleReplySubmit(comment.id)}
-                            >
-                              Submit
-                            </Button>
-                            <Button color="primary" onClick={handleCancelReply}>
-                              Cancel
-                            </Button>
-                          </Container>
-                        )}
-
-                        {showReplies.parentCommentId === comment.id && (
-                          <Container>
-                            {showReplies.replies.map((reply) => (
-                              <ListItem
-                                key={reply.id}
-                                sx={{
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  alignItems: "flex-start",
-                                  width: "100%",
-                                  borderTop: (theme) =>
-                                    `1px solid ${theme.palette.divider}`,
-                                }}
-                              >
-                                <Box sx={{ width: "100%" }}>
-                                  <Box
-                                    sx={{
-                                      width: "100%",
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      alignItems: "center",
-                                    }}
-                                  >
-                                    <ListItemText
-                                      primary={
-                                        <Typography
-                                          sx={{ color: "rgba(0, 0, 0, 0.87)" }}
-                                        >
-                                          {reply.content}
-                                        </Typography>
-                                      }
-                                    />
-                                    {reply.isHidden && (
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          color: "error.main",
-                                        }}
-                                      >
-                                        <FlagIcon
-                                          sx={{ fontSize: "1.5rem", mr: 1 }}
-                                        />
-                                        <Typography variant="body1">
-                                          HIDDEN
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                  </Box>
-                                  <Typography
-                                    variant="body2"
-                                    sx={{ color: "rgba(0, 0, 0, 0.87)" }}
-                                  >
-                                    By{" "}
-                                    {`${reply.author.firstName} ${reply.author.lastName} ${reply.authorId.slice(-5)}`}{" "}
-                                    | Posted:{" "}
-                                    {new Date(
-                                      reply.createdAt
-                                    ).toLocaleDateString()}{" "}
-                                    | Last Updated:{" "}
-                                    {new Date(
-                                      reply.updatedAt
-                                    ).toLocaleDateString()}
-                                  </Typography>
-                                  <RatingsButtons
-                                    isVoting={isVoting}
-                                    userId={auth.user?.id || null}
-                                    targetType="comment"
-                                    element={reply}
-                                    onReport={handleReport}
-                                    onVote={handleVote}
-                                    openEditPostDialog={openEditPostDialog}
-                                    onDelete={handleDelete}
-                                  />
-                                </Box>
-                              </ListItem>
-                            ))}
-                            {repliesPage < totalRepliesPages && (
-                              <Button
-                                color="primary"
-                                size="small"
-                                onClick={handleMoreReplies}
-                              >
-                                More Replies
-                              </Button>
-                            )}
-                          </Container>
-                        )}
-                      </ListItem>
-                    ))}
+                  <List>
+                    {comments.map((comment) =>
+                      renderComment("comment", comment)
+                    )}
                   </List>
                 ) : (
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      textAlign: "center",
-                      mt: 3,
-                      color: "rgba(0, 0, 0, 0.87)",
-                    }}
-                  >
+                  <Typography variant="body1" textAlign="center" mt={3}>
                     No comments to display
                   </Typography>
                 )}
               </Box>
 
+              {/* Comment Pagination */}
               {comments.length > 0 && (
                 <Box sx={{ mt: 3, display: "flex", justifyContent: "center" }}>
                   <Pagination
@@ -1082,6 +846,7 @@ const PostDetailPage = () => {
             reportExplanation={reportExplanation}
           />
 
+          {/* Delete Dialog */}
           {openDeleteDialog && (
             <DeleteDialog
               auth={auth}
@@ -1092,6 +857,7 @@ const PostDetailPage = () => {
             />
           )}
 
+          {/* Edit Post Dialog */}
           {createPostDialogOpen && (
             <CreatePostDialog
               dialogType="edit"
