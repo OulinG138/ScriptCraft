@@ -296,9 +296,11 @@ export default function Profile() {
         toast.success("Password updated successfully!");
         resetForm();
         setIsEditingPassword(false);
-      } catch (error) {
+      } catch (error: any) {
         console.log(error);
-        toast.error("Failed to update password");
+        const errorMessage =
+          error?.response?.data?.error || "Failed to update password";
+        toast.error(errorMessage);
       } finally {
         setSubmitting(false);
       }
