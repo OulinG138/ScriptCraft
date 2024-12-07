@@ -74,7 +74,7 @@ const NavbarContent = () => {
       {/* Top row with logo and hamburger */}
       <div className="flex justify-between items-center">
         <Link href="/" className="text-xl font-semibold text-gray-800">
-          Scriptorium
+          SciptCraft
         </Link>
 
         <div className="lg:hidden">
