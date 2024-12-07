@@ -60,8 +60,8 @@ cd <repository-folder>
 ./run.sh
 ```
 
-2. Technologies Used
-   • Frontend: React, TailwindCSS, MUI
-   • Backend: Next.js, REST API, Prisma
-   • Containerization: Docker
-   • Languages Supported: Python, JavaScript, C++, Java, and more
+## **Technologies Used**
+* Frontend: React, TailwindCSS, MUI
+* Backend: Next.js, REST API, Prisma
+* Containerization: Docker
+* Languages Supported: Python, JavaScript, C++, Java, and more
