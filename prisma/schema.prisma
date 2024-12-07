@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id          String   @id @default(uuid())
+  firstName   String
+  lastName    String
+  email       String   @unique
+  phoneNumber String?
+  password    String
+  isAdmin     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  avatarId Int?
+  avatar   Avatar? @relation(fields: [avatarId], references: [id], onDelete: SetNull)
+
+  blogPosts     BlogPost[]
+  comments      Comment[]
+  codeTemplates CodeTemplate[]
+  reports       Report[]
+  ratings       Rating[]
+}
+
+model Avatar {
+  id        Int      @id @default(autoincrement())
+  imagePath String   @unique
+  createdAt DateTime @default(now())
+
+  users User[]
+}
+
+model CodeTemplate {
+  id          Int      @id @default(autoincrement())
+  title       String
+  explanation String
+  codeContent String
+  language    String // C, C++, Java, Python, and JavaScript
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId String
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  parentTemplateId Int?
+  parentTemplate   CodeTemplate?  @relation("TemplateFork", fields: [parentTemplateId], references: [id], onDelete: SetNull)
+  forks            CodeTemplate[] @relation("TemplateFork")
+
+  blogPosts BlogPost[] @relation("CodeTemplatesAndBlogPosts")
+
+  tags Tag[] @relation("TemplatesAndTags")
+}
+
+model BlogPost {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  content     String
+  isHidden    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ratingCount Int      @default(0)
+  reportCount Int      @default(0)
+
+  authorId String
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  codeTemplates CodeTemplate[] @relation("CodeTemplatesAndBlogPosts")
+
+  tags Tag[] @relation("PostsAndTags")
+
+  comments Comment[]
+
+  ratings Rating[]
+
+  reports Report[]
+}
+
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  blogPosts     BlogPost[]     @relation("PostsAndTags")
+  codeTemplates CodeTemplate[] @relation("TemplatesAndTags")
+}
+
+model Rating {
+  id         Int    @id @default(autoincrement())
+  value      Int    @default(0) // 1 - "upvote", 0 - "downvote"
+  targetType String // post or comment
+
+  userId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  blogPostId Int?
+  blogPost   BlogPost? @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+
+  commentId Int?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          Int      @id @default(autoincrement())
+  explanation String
+  targetType  String // 'post' or 'comment'
+  isResolved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  reporterId String
+  reporter   User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  blogPostId Int?
+  blogPost   BlogPost? @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+
+  commentId Int?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id          Int      @id @default(autoincrement())
+  content     String
+  isHidden    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ratingCount Int      @default(0)
+  reportCount Int      @default(0)
+
+  parentCommentId Int?
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: SetNull)
+  replies         Comment[] @relation("CommentReplies")
+
+  authorId String
+  author   User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  postId Int
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  reports Report[]
+
+  ratings Rating[]
+}
+

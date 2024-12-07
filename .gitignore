@@ -1,0 +1,13 @@
+.DS_STORE
+node_modules/
+.next/
+
+# Ignore everything in the prisma directory
+prisma/*
+
+# Except for the prisma schema file
+!prisma/schema.prisma
+!prisma/seed.js
+!prisma/seed.ts
+
+*.code-workspace
